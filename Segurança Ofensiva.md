@@ -1,6 +1,6 @@
   
 
-GRIS![](https://lh7-us.googleusercontent.com/docsz/AD_4nXfPY2u7a3fgtRM0q4CqVuby4qKYOQFeqcf26X8ooxQ5FhTSfGzYssdE46EM8eEfVWaOEltwGbp0ROj4_eCzvNHOXWGbVdr-wBUkklwRsHAKp9ntoS4I9ruiuROHa8N26Z0hRX4eagI3Gx10jey0ZOoRCIG4?key=DzYtBEZqL9HFVg1Oepk-ag)
+![](https://lh7-us.googleusercontent.com/docsz/AD_4nXfPY2u7a3fgtRM0q4CqVuby4qKYOQFeqcf26X8ooxQ5FhTSfGzYssdE46EM8eEfVWaOEltwGbp0ROj4_eCzvNHOXWGbVdr-wBUkklwRsHAKp9ntoS4I9ruiuROHa8N26Z0hRX4eagI3Gx10jey0ZOoRCIG4?key=DzYtBEZqL9HFVg1Oepk-ag)
 
 Grupo de Resposta a Incidentes de Segurança - Universidade Federal do Rio de Janeiro
 
@@ -178,7 +178,12 @@ Obs: Neste caso precisaríamos ter certeza que o host possui `ping`, `sleep` e `
 
 [Portswigger](https://portswigger.net/web-security/all-labs#os-command-injection)
 
-  
+
+
+# falta fazer
+precisa do burp collaborator?
+- https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band
+- https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band-data-exfiltration
 
 # Referências
 
