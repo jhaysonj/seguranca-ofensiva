@@ -185,6 +185,8 @@ precisa do burp collaborator?
 - https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band
 - https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band-data-exfiltration
 
+configurar bwapp -  https://www.youtube.com/watch?v=AoLrB_p6rF4
+download bwapp - https://sourceforge.net/projects/bwapp/files/bee-box/
 # Referências
 
 laboratório TryHackMe - [https://tryhackme.com/r/room/owasptop10](https://tryhackme.com/r/room/owasptop10)
