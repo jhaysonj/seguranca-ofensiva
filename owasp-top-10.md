@@ -83,9 +83,9 @@ Non-service Usuários non-service referem-se a contas de usuário que não são 
 Non-daemon Daemons são programas que rodam em segundo plano para realizar tarefas específicas, como servidores de email, web servers, e outros. Contas non-daemon são contas de usuário que não são usadas para rodar esses programas de segundo plano.
 
 Podemos enumerar essas informações com o comando abaixo:
-
+```
 grep -E "non-root|non-service|non-daemon" /etc/passwd
-
+```
   
 
 ## Usos Comuns do /usr/sbin/nologin
