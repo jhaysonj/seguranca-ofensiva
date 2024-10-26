@@ -506,6 +506,25 @@ mysql -h 192.168.0.5 -u root
 ```
 
 
+## wordpress
+```
+wpscan --url http://blog.thm --enumerate ap,at,dbe,cb,u --detection-mode aggressive
+```
+Command Breakdown:
+- ap = All Plugins
+- at = All Themes
+- dbe = Database Exports
+- cb = Config Backups
+- u = Enumerate Users
+- Detection-Mode = Since we’re not worried about being detected we can use aggressive mode which occasionally delivers more results at the cost of generating more noise.
+
+bruteforce de senhas com `XML-RPC` 
+```
+wpscan --url http://blog.thm/ --usernames kwheel,bjoel --passwords ~/wordlist/rockyou.txt
+```
+http://blog.thm/xmlrpc.php
+	XML-RPC server accepts POST requests only.
+
 
 ## tools
 ### Hydra
@@ -540,4 +559,26 @@ gobuster -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/raft
 -u url
 -x string              File extension(s) to search for (dir mode only)
 -p string              Proxy to use for requests [http(s)://host:port] (dir mode only)
+
+### ffuf
+bruteforce de +1 parametro
+```
+ffuf -w users.txt:USER -w passwords.txt:PASS -u http://blog.thm/wp-login.php -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "log=USER&pwd=PASS&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1"
+```
+
+proxy burp `-x`
+```
+-x http://127.0.0.1:8080
+```
+
+header `-H`
+```
+-H "Content-Type: application/x-www-form-urlencoded" -H "Cookie: wordpress_test_cookie=WP+Cookie+check" 
+```
+
+filtrando resposta `fr`
+```
+-fr "Invalid username"
+```
+não exibe resultados que contenham a frase `Invalid username`
 
