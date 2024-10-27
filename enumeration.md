@@ -2,7 +2,9 @@
 
 
 
-## aspx
+## http
+- http 1.1 requer Host no cabeçalho
+### aspx
 
 enumerando versão do aspx
 ```
@@ -84,12 +86,35 @@ Modo Ativo:
 
 
 
-## NetBios/SMB
+## NetBios (139/tcp)   / SMB (445/tcp)
 Permite o compartilhamento de arquivos/diretórios na rede.
 
 
 NetBios (porta 139) --> antigo
 SMB (porta 445) --> mais recente
+
+protocolos aceitos pelo SMB
+```
+nmap --script smb-protocols -p 445 10.10.11.35 -Pn
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+
+Host script results:
+| smb-protocols: 
+|   dialects: 
+|     2.02
+|     2.10
+|     3.00
+|     3.02
+|_    3.11
+
+```
+
+conexão usando protocolo v2 e v3:
+```
+smbclient -L \\10.10.11.35 -N -m SMB2
+smbclient -L \\10.10.11.35 -N -m SMB3
+```
 
 Identifica hosts e informações de NetBIOS em uma rede (classe C)
 ```
@@ -103,7 +128,7 @@ sudo nbtscan 192.168.0.0/24
 
 Em alguns casos o netbios/smb permite o login apenas com o usuário e senha vazia.
 ```
-smbclient //hostname/sharename -U username%
+smbclient \\hostname/sharename -U username%
 ```
 - `%` indica que a senha está em branco.
 
@@ -207,7 +232,7 @@ Para excluir basta utilizar o comando
 net use Z: /delete
 ```
 
-## rpc (Remote Procedure Call)
+## rpc (Remote Procedure Call)  135/tcp
 O RPC é uma API que permite a um programa executar um procedimento (ou função) em outro espaço de endereço, como em um servidor remoto, como se fosse uma chamada local
 conectando ao servidor com usuário e senha
 ```
@@ -505,6 +530,9 @@ mysql -h 192.168.0.5 -u mysql
 mysql -h 192.168.0.5 -u root
 ```
 
+```
+mysql -u <username> -p -h <hostname> -P <port> <database>
+```
 
 ## wordpress
 ```
@@ -526,7 +554,120 @@ http://blog.thm/xmlrpc.php
 	XML-RPC server accepts POST requests only.
 
 
-## tools
+arquivo de configuração:
+contem informações úteis do banco de dados
+```
+cat wp-config.php
+
+
+// ** MySQL settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define('DB_NAME', 'blog');
+
+
+/** MySQL database username */
+define('DB_USER', 'wordpressuser');
+
+/** MySQL database password */
+define('DB_PASSWORD', 'LittleYellowLamp90!@');
+
+```
+
+
+## windows
+**enumerar versão**
+```
+systeminfo
+```
+### enumeração de usuários
+**enumerar usuários locais**
+```
+net user
+User accounts for \\EC2AMAZ-I8UHO76
+
+-------------------------------------------------------------------------------
+Administrator            DefaultAccount           Guest
+Jenny                    John
+The command completed successfully.
+```
+
+**powershell, enumerar usuários locais**
+```
+Get-LocalUser
+Name           Enabled Description
+----           ------- -----------
+Administrator  True    Built-in account for administering the computer/domain
+DefaultAccount False   A user account managed by the system.
+Guest          True    Built-in account for guest access to the computer/domain
+Jenny          True
+John           True
+```
+obs: a coluna **`Enabled`** indica se a conta de usuário local está ativa (habilitada) ou desativada.
+
+powershell, enumerar usuários locais com permissão de administradores:
+```
+Get-LocalGroupMember -Group "Administrators"
+
+ObjectClass Name                          PrincipalSource
+----------- ----                          ---------------
+User        EC2AMAZ-I8UHO76\Administrator Local
+User        EC2AMAZ-I8UHO76\Guest         Local
+User        EC2AMAZ-I8UHO76\Jenny         Local
+```
+
+**enumerar privilégios de usuário**
+```
+whoami /priv
+whoami /all
+```
+
+### login
+loggin bem sucedido
+```
+wevtutil qe Security "/q:*[System[EventID=4624]]" /f:text /c:10
+```
+
+
+login bem sucedidos filtrando pelo nome de usuário
+```
+wevtutil qe Security "/q:*[System[EventID=4624] and EventData[Data[@Name='TargetUserName']='john']]" /f:text /c:10
+```
+- **`/q:*[System[EventID=4624]]`**: Filtra eventos com ID 4624.
+- **`EventData[Data[@Name='TargetUserName']='john']`**: Dentro dos dados do evento, filtra onde o nome do usuário é "john".
+obs: caso a saida do comando acima seja nula, o usuário não fez login bem sucedido
+
+
+loggin bem sucedido com usuário john em ordem anti-cronologica (mais recente pro mais antigo)
+```
+wevtutil qe Security "/q:*[System[EventID=4624] and EventData[Data[@Name='TargetUserName']='john']]" /f:text /c:10 /rd:true
+```
+- **`qe Security`**: Consulta o log de eventos de segurança.
+- **`"/q:*[System[EventID=4624]]"`**: Filtra os eventos de logon bem-sucedido (ID 4624).
+- **`/f:text`**: Formato de saída em texto.
+- **`/rd:true`**: Inverte a ordem dos eventos, mostrando os mais recentes primeiro.
+
+**Formato das datas:**
+```
+YYYY-MM-DDTHH:MM:SS.sss 
+2019-03-02T17:48:32.199 
+
+ano = 2019 
+mes = 03
+dia = 02
+hora = 17
+minuto = 48
+segundo = 32
+milissegundo = 199
+```
+### Remote Desktop Protocol (rdp)
+utilitário para interagir com rdp no linux
+```
+xfreerdp
+xfreerdp /v:<IP_do_host> /u:<nome_do_usuário> /p:<senha>
+xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
+```
+
+## tricks
 ### Hydra
 bruteforce de serviços, ssh,ftp
 
@@ -582,3 +723,66 @@ filtrando resposta `fr`
 ```
 não exibe resultados que contenham a frase `Invalid username`
 
+### hashcat
+
+```
+hashcat -m <hash_type> -a <attack_mode> <hash_file> <wordlist>
+```
+via de regra eu quero o `-a 0` (ataque de dicionario)
+#### Modos de Ataque (`-a`)
+
+1. **Ataque de Dicionário (`-a 0`)**
+    
+    - **Descrição:** Tenta quebrar o hash comparando-o com palavras em uma lista de palavras (wordlist).
+    - **Uso:** `hashcat -m <hash_type> -a 0 <hash_file> <wordlist>`
+    - **Exemplo:** `hashcat -m 0 -a 0 hashes.txt rockyou.txt`
+2. **Ataque de Combinado (`-a 1`)**
+    
+    - **Descrição:** Combina cada palavra de duas listas de palavras e tenta quebrar o hash.
+    - **Uso:** `hashcat -m <hash_type> -a 1 <hash_file> <wordlist1> <wordlist2>`
+    - **Exemplo:** `hashcat -m 0 -a 1 hashes.txt list1.txt list2.txt`
+3. **Ataque de Regras (`-a 3`)**
+    
+    - **Descrição:** Utiliza uma série de regras para modificar cada entrada de uma wordlist. Por exemplo, pode adicionar números ao final, substituir letras, etc.
+    - **Uso:** `hashcat -m <hash_type> -a 0 <hash_file> <wordlist> --rules <rules_file>`
+    - **Exemplo:** `hashcat -m 0 -a 0 hashes.txt rockyou.txt --rules dive.rule`
+4. **Ataque de Máscara (`-a 3`)**
+    
+    - **Descrição:** Gera palavras-chave dinamicamente com base em uma máscara, útil para realizar ataques de força bruta.
+    - **Uso:** `hashcat -m <hash_type> -a 3 <hash_file> <mask>`
+    - **Exemplo:** `hashcat -m 0 -a 3 hashes.txt ?l?l?l?l?l?l?l?l`
+5. **Ataque de Toggle-Case (`-a 4`)**
+    
+    - **Descrição:** Alterna a caixa (maiúsculas e minúsculas) das palavras da wordlist.
+    - **Uso:** `hashcat -m <hash_type> -a 4 <hash_file> <wordlist>`
+    - **Exemplo:** `hashcat -m 0 -a 4 hashes.txt rockyou.txt`
+6. **Ataque de Mask-Generated (`-a 6`)**
+    
+    - **Descrição:** Utiliza uma wordlist e aplica uma máscara ao final de cada palavra.
+    - **Uso:** `hashcat -m <hash_type> -a 6 <hash_file> <wordlist> <mask>`
+    - **Exemplo:** `hashcat -m 0 -a 6 hashes.txt rockyou.txt ?d?d`
+7. **Ataque de Mask-Generated (`-a 7`)**
+    
+    - **Descrição:** Aplica uma máscara ao início de cada palavra em uma wordlist.
+    - **Uso:** `hashcat -m <hash_type> -a 7 <hash_file> <mask> <wordlist>`
+    - **Exemplo:** `hashcat -m 0 -a 7 hashes.txt ?d?d rockyou.txt`
+8. **Ataque de Hybrid Wordlist + Mask (`-a 8`)**
+    
+    - **Descrição:** Utiliza uma combinação de uma wordlist e uma máscara. Isso aplica a máscara tanto no início quanto no final da wordlist.
+    - **Uso:** `hashcat -m <hash_type> -a 8 <hash_file> <wordlist> <mask>`
+    - **Exemplo:** `hashcat -m 0 -a 8 hashes.txt rockyou.txt ?d?d?d`
+9. **Ataque de Hybrid Mask + Wordlist (`-a 9`)**
+    
+    - **Descrição:** Utiliza uma combinação de uma máscara e uma wordlist. Aplica a máscara tanto no início quanto no final da wordlist.
+    - **Uso:** `hashcat -m <hash_type> -a 9 <hash_file> <mask> <wordlist>`
+    - **Exemplo:** `hashcat -m 0 -a 9 hashes.txt ?d?d?d rockyou.txt`
+
+
+### ritual
+```
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+CTRL+Z
+stty raw -echo
+fg
+export TERM=xterm
+```
