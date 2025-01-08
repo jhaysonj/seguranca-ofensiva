@@ -53,3 +53,17 @@ arquivos executados por quem os criou
 ```
 find / -user root -perm /4000
 ```
+
+
+procurar por nome de arquivo:
+```
+find / -name "user.txt" 2>/dev/null
+```
+
+
+## linux smart enumeration (LSE)
+https://github.com/diego-treitos/linux-smart-enumeration
+
+
+
+

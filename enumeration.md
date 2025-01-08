@@ -1,10 +1,10 @@
-# enumeração
+a
 
 
 
-## http
+# http
 - http 1.1 requer Host no cabeçalho
-### aspx
+## aspx
 
 enumerando versão do aspx
 ```
@@ -47,13 +47,13 @@ porta padrão: 443
 openssl s_client -connect www.example.com:443 -quiet
 ```
 
-## Firewall
+# Firewall
 ```
 wafw00f example.com
 ```
 
 
-## ftp (21)
+# ftp (21)
 O FTP permite o envio e recebimento de arquivos.
 Em alguns casos o ftp permite o login apenas com o usuário e senha vazia.
 O firewall tende a ser menos restritivo com o modo passivo
@@ -73,7 +73,7 @@ comandos úteis:
 5. mput
 	Descrição: Envia múltiplos arquivos do diretório local para o servidor FTP.
 
-### ftp (passivo x ativo)
+## ftp (passivo x ativo)
 referencial é o servidor
 - No modo FTP passivo o servidor fica escutando enquanto aguarda a conexão do cliente. 
 - No modo FTP ativo, o cliente fica escutando enquanto aguarda a conexão do servidor.
@@ -86,7 +86,7 @@ Modo Ativo:
 
 
 
-## NetBios (139/tcp)   / SMB (445/tcp)
+# NetBios (139/tcp)   / SMB (445/tcp)
 Permite o compartilhamento de arquivos/diretórios na rede.
 
 
@@ -110,11 +110,35 @@ Host script results:
 
 ```
 
-conexão usando protocolo v2 e v3:
+estabelece conexão passando usuário e senha
+```
+smbclient  \\\\10.10.11.35\\SYSVOL\\ -U "user%pass" 
+```
+
+lista os diretórios compartilhados (`--workgroup`)
+```
+smbclient -L \\\\10.10.11.35
+smbclient -L \\\\10.10.11.35 --workgroup cicada.htb
+Password for [WORKGROUP\user]:
+
+	Sharename       Type      Comment
+	---------       ----      -------
+	ADMIN$          Disk      Remote Admin
+	C$              Disk      Default share
+	DEV             Disk      
+	HR              Disk      
+	IPC$            IPC       Remote IPC
+	NETLOGON        Disk      Logon server share 
+	SYSVOL          Disk      Logon server share 
+
+```
+
+lista usando protocolo v2 e v3:
 ```
 smbclient -L \\10.10.11.35 -N -m SMB2
 smbclient -L \\10.10.11.35 -N -m SMB3
 ```
+
 
 Identifica hosts e informações de NetBIOS em uma rede (classe C)
 ```
@@ -170,7 +194,7 @@ stat
 	Descrição: Mostra informações detalhadas sobre um arquivo ou diretório.
 exit ou quit
 
-### via windows
+## via windows
 **ex nbtstat**
 serve para identificar informações do host
 ```
@@ -232,7 +256,7 @@ Para excluir basta utilizar o comando
 net use Z: /delete
 ```
 
-## rpc (Remote Procedure Call)  135/tcp
+# rpc (Remote Procedure Call)  135/tcp
 O RPC é uma API que permite a um programa executar um procedimento (ou função) em outro espaço de endereço, como em um servidor remoto, como se fosse uma chamada local
 conectando ao servidor com usuário e senha
 ```
@@ -243,7 +267,6 @@ conectando ao servidor via Null Session
 rpcclient -U "" -N <hostname_or_ip>
 ```
 
-### comandos úteis:
 **Comando help**
 ```
 rpcclient $> ?
@@ -287,7 +310,7 @@ Obs: O comando `netshare` mostra menos informações que o `netshareenum`, que p
 rpcclient $> srvinfo
 ```
 Este comando fornece informações sobre o servidor, como versão e nome.
-## pop3 (110)
+# pop3 (110)
 serviço de email
 porta padrão: 110
 
@@ -311,7 +334,7 @@ PASS
 Comandos úteis:
 1. TOP \[message index\] \[num lines to return\]
 
-## SMTP
+# SMTP
 O SMTP (Simple Mail Transfer Protocol) é um protocolo de comunicação utilizado para enviar e transferir e-mails entre servidores de e-mail e clientes.
 **porta default: 25**
 ```
@@ -349,7 +372,7 @@ VRFY jhayson
 
 obs: podemos enviar um email para um determinador usuário para enumerar se o usuário em questão existe ou não. De acordo com a resposta recebida podemos definir se o usuário existe ou não.
 
-## Enumerando Dispositivos de Rede
+# Enumerando Dispositivos de Rede
 porta default: 23
 
 ex de dispositivos de rede firewall, routers e switchs
@@ -364,7 +387,7 @@ conexão com o servidor
 telnet <ip> <porta>
 ```
 
-## ssh (secure shell)
+# ssh (secure shell)
 Permite conexão de shell remota
 Portas default: 22, 2222, 22222
 
@@ -399,7 +422,7 @@ ssh -v root@192.168.0.8
 Authentications that can continue: publickey,password
 ```
 
-### Autenticação com chave pública
+## Autenticação com chave pública
 basta adicionar a nossa chave pública no arquivo `authorized_keys`
 
 gerando par de chave público/privada
@@ -410,7 +433,7 @@ id_rsa  id_rsa.pub
 - `id_rsa` é a chave privada
 - `id_rsa.pub` é a chave pública
 
-### Arquivo de configuração
+## Arquivo de configuração
 path `/etc/ssh/sshd_config`
 
 alterando a porta default:
@@ -440,7 +463,7 @@ PermitRootLogin yes
 https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/v2v_guide/preparation_before_the_p2v_migration-enable_root_login_over_ssh
 
 
-## SNMP
+# SNMP
 Protocolo para gerenciamento de dispostivos de rede, encontrado em switchs, roteadores e servidores.
 porta default: 161 (UDP)
 
@@ -465,7 +488,7 @@ Programa para mapear as communities de um host
 onesixtyone -c community.txt 192.168.0.1/24
 ```
 
-### snmpwalk
+## snmpwalk
 snmpwalk é um utilitário para interagir com o protocolo SNMP
 
 exemplos de uso:
@@ -487,7 +510,7 @@ exemplos de uso:
 ```
 https://github.com/SofianeHamlaoui/Lockdoor-Framework/blob/master/ToolsResources/INFO-GATH/CHEATSHEETS/snmb_enumeration.md
 
-### snmptranslate
+## snmptranslate
 O snmp converte OIDs para MIB e MIB para OIDs, ou seja, permite a conversão bidirecional entre OIDs (Object Identifiers) numéricos e seus nomes de texto descritivos dentro da MIB (Management Information Base)
 
 pesquisa por uma função
@@ -519,7 +542,7 @@ echo "" > /etc/snmp/snmp.conf
 ```
 
 
-## mysql
+# mysql
 porta default: 3306
 
 testar credenciais default
@@ -534,7 +557,7 @@ mysql -h 192.168.0.5 -u root
 mysql -u <username> -p -h <hostname> -P <port> <database>
 ```
 
-## wordpress
+# wordpress
 ```
 wpscan --url http://blog.thm --enumerate ap,at,dbe,cb,u --detection-mode aggressive
 ```
@@ -573,16 +596,87 @@ define('DB_PASSWORD', 'LittleYellowLamp90!@');
 
 ```
 
+# msfconsole
+```
+search eternalblue
+```
 
-## windows
+create a workspace
+```
+workspace -a desec
+```
+
+switch to workspace
+```
+workspace desec
+```
+
+nmap and store results
+```
+db_nmap -sC -sV -v -Pn <IP>
+```
+
+show previous hosts
+```
+hosts
+```
+
+consult previous nmap results
+```
+services
+services 172.30.0.103
+```
+
+# windows
 **enumerar versão**
 ```
 systeminfo
 ```
-### enumeração de usuários
+
+**Obtaining AD users’ hashes or local hashes:**
+```
+vssadmin create shadow /for=C:
+copy <shadow-volume>\Windows\NTDS\ntds.dit <ntds>
+copy <shadow-volume>\Windows\system32\config\system <system>
+copy <shadow-volume>\Windows\system32\config\sam <sam>
+
+impacket-secretsdump -ntds <ntds> -system <system> LOCAL
+impacket-secretsdump <user>:<pass>@<host>
+```
+
+**Capturing hashes by registry:**
+```
+reg save hklm\sam <name>
+reg save hklm\system <name>
+impacket-secretsdump -sam <sam> -system <system> LOCAL
+```
+
+**versões de hash no windows (mais antigos pro mais recentes)**
+- LM (geralmente termina com `EE`, se  começar com `AA` e terminar com `EE` está em desuso)
+- NTLM = NTLM V1
+- NTLM V2
+obs: se for windows antigo, testar eternalblue
+
+**Path for hashes:**
+- C:\Windows\system32\config\SAM                        usuarios windows 7,8,10,11
+- C:\Windows\system32\NTDS\ntds.dit                    usuarios do windows server
+- C:\Windows\system32\config\SYSTEM                 usuarios windows 7,8,10,11
+
+**Cracking hashes:**
+```
+john --format=nt --wordlist=<wordlist> <hashfile>
+john --format=lm --wordlist=<wordlist> <hashfile>
+```
+
+**hashes da RAM:**
+- /usr/share/windows-binaries/fgdump/fgdump.exe
+- /usr/share/windows-resources/wce/wce-universal.exe
+
+## enumeração de usuários
 **enumerar usuários locais**
 ```
 net user
+
 User accounts for \\EC2AMAZ-I8UHO76
 
 -------------------------------------------------------------------------------
@@ -594,6 +688,7 @@ The command completed successfully.
 **powershell, enumerar usuários locais**
 ```
 Get-LocalUser
+
 Name           Enabled Description
 ----           ------- -----------
 Administrator  True    Built-in account for administering the computer/domain
@@ -621,7 +716,18 @@ whoami /priv
 whoami /all
 ```
 
-### login
+## Remote Desktop Protocol (rdp)
+utilitário para interagir com rdp no linux
+```
+xfreerdp
+xfreerdp /v:<IP_do_host> /u:<nome_do_usuário> /p:<senha>
+xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
+```
+
+
+
+
+## login
 loggin bem sucedido
 ```
 wevtutil qe Security "/q:*[System[EventID=4624]]" /f:text /c:10
@@ -632,8 +738,8 @@ login bem sucedidos filtrando pelo nome de usuário
 ```
 wevtutil qe Security "/q:*[System[EventID=4624] and EventData[Data[@Name='TargetUserName']='john']]" /f:text /c:10
 ```
-- **`/q:*[System[EventID=4624]]`**: Filtra eventos com ID 4624.
-- **`EventData[Data[@Name='TargetUserName']='john']`**: Dentro dos dados do evento, filtra onde o nome do usuário é "john".
+- `/q:*[System[EventID=4624]]`: Filtra eventos com ID 4624.
+- `EventData[Data[@Name='TargetUserName']='john']`: Dentro dos dados do evento, filtra onde o nome do usuário é "john".
 obs: caso a saida do comando acima seja nula, o usuário não fez login bem sucedido
 
 
@@ -659,16 +765,9 @@ minuto = 48
 segundo = 32
 milissegundo = 199
 ```
-### Remote Desktop Protocol (rdp)
-utilitário para interagir com rdp no linux
-```
-xfreerdp
-xfreerdp /v:<IP_do_host> /u:<nome_do_usuário> /p:<senha>
-xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
-```
 
-## tricks
-### Hydra
+
+# Hydra
 bruteforce de serviços, ssh,ftp
 
 ex ftp:
@@ -691,7 +790,7 @@ Flags úteis:
 -p: senha em texto
 
 
-### gobuster
+# gobuster
 ```
 gobuster -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/raft-large-directories.txt -t 100 -e 
 ```
@@ -701,7 +800,7 @@ gobuster -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/raft
 -x string              File extension(s) to search for (dir mode only)
 -p string              Proxy to use for requests [http(s)://host:port] (dir mode only)
 
-### ffuf
+# ffuf
 bruteforce de +1 parametro
 ```
 ffuf -w users.txt:USER -w passwords.txt:PASS -u http://blog.thm/wp-login.php -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "log=USER&pwd=PASS&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1"
@@ -723,13 +822,13 @@ filtrando resposta `fr`
 ```
 não exibe resultados que contenham a frase `Invalid username`
 
-### hashcat
+# hashcat
 
 ```
 hashcat -m <hash_type> -a <attack_mode> <hash_file> <wordlist>
 ```
 via de regra eu quero o `-a 0` (ataque de dicionario)
-#### Modos de Ataque (`-a`)
+## Modos de Ataque (`-a`)
 
 1. **Ataque de Dicionário (`-a 0`)**
     
@@ -777,12 +876,96 @@ via de regra eu quero o `-a 0` (ataque de dicionario)
     - **Uso:** `hashcat -m <hash_type> -a 9 <hash_file> <mask> <wordlist>`
     - **Exemplo:** `hashcat -m 0 -a 9 hashes.txt ?d?d?d rockyou.txt`
 
+listar exemplos de hashes:
+```
+hashcat --example-hashes
+```
 
-### ritual
+hashcat para identificar a hash
+```
+hashcat --identify aba63f26d5947a558d4fdbbbe4468965710520540ef3d48e0b3cbf79d6cba217
+```
+
+# john
+john para transformar um zip com senha em uma hash
+```
+zip2john ~/Downloads/files.zip > hash.txt
+```
+
+john para quebrar uma hash
+```
+john --wordlist=~/wordlist/rockyou.txt hash.txt
+```
+
+## unshadow
+```
+unshadow passwd shadow >  hashes_formatadas
+```
+```
+john hashes_formatadas
+```
+
+# wget
+para baixar todo conteudo de uma página
+```
+wget -m <URL>
+```
+
+# grep
+buscar uma string em todo o sistema
+```
+grep -ri "desec" /caminho/do/diretorio 2>/dev/null
+```
+# ritual
 ```
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 CTRL+Z
 stty raw -echo
 fg
 export TERM=xterm
+```
+
+# identificar hashes
+hashid
+# vim
+```
+:w !sudo tee /path/to/file/arquivo
+```
+
+# enum4linux
+```
+enum4linux -a 172.16.1.107
+```
+# crackmapexec
+```
+sudo crackmapexec smb 10.10.11.35 -d cicada.htb -u @users.txt -p '' --shares
+```
+
+
+# Active Directory
+## Relative Identifier (RID)
+O RID é a parte final de um **SID (Security Identifier)**, que identifica de forma exclusiva contas de usuários, grupos ou outros objetos de segurança
+RIDs Comuns em Sistemas Windows
+
+Estrutura do SID e o Papel do RID
+```
+S-1-5-21-XXXXXXXXX-XXXXXXXXX-XXXXXXXXX-RID
+```
+- `S-1-5`: Identificador padrão do Windows.
+- `21-XXXXXXXXX-XXXXXXXXX-XXXXXXXXX`: Porção única associada ao domínio ou computador. É chamado de **SID base**.
+- RID: Identificador específico que diferencia contas, grupos ou outros objetos dentro do mesmo domínio ou sistema.
+
+
+Um **SID** típico segue o formato:
+
+|**RID**|**Descrição**|
+|---|---|
+|**500**|Administrador|
+|**501**|Convidado|
+|**512**|Grupo Administradores do Domínio|
+|**513**|Grupo Usuários do Domínio|
+|**1000+**|Contas de usuários criadas manualmente|
+bruteforce de RID
+```
+crackmapexec smb 10.10.11.35 -u guest -p '' -d cicada.htb --shares --rid-brute
 ```
