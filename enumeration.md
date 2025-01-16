@@ -59,6 +59,8 @@ Em alguns casos o ftp permite o login apenas com o usuário e senha vazia.
 O firewall tende a ser menos restritivo com o modo passivo
 ```
 ftp 192.168.0.8 -P 21
+
+ftp USER@HOST PORT
 ```
 comandos úteis:
 1. more teste := abre o arquivo teste
@@ -935,14 +937,21 @@ hydra -L users.txt -P pass.txt 192.168.0.8 ssh -t 4 -s 22
 ```
 Obs: no ssh é preciso limitar a quantidade de requisições paralelas usando `-t 4`
 
-Flags úteis:
+```
+hydra -v -l <user> -p <pass> -M <targets> <protocol> 
+hydra -v -L <user_list> -P <pass_list> <protocol>://<ip>:<port> 
+```
+
+**Flags úteis:**
 -s PORT: porta do serviço
 -L: path para lista de usuários
 -P: path para lista de senhas
 -C: path para arquivo no formato "login:pass"
 -l: usuário em texto
 -p: senha em texto
-
+-s PORT
+-W TIME
+        defines a wait time between each connection a task performs. This usually only makes sense if a low task number is used, .e.g -t 1
 
 # gobuster
 ```
@@ -975,6 +984,14 @@ filtrando resposta `fr`
 -fr "Invalid username"
 ```
 não exibe resultados que contenham a frase `Invalid username`
+
+# cewl
+pesquisar por uma string em um site
+```
+cewl URL -m LENGTH
+```
+-m, --min_word_length
+                     Minimum word length, default 3.
 
 # hashcat
 
@@ -1015,6 +1032,22 @@ unshadow passwd shadow >  hashes_formatadas
 ```
 john hashes_formatadas
 ```
+
+## bruteforce
+
+```
+john --wordlist=<wordlist> --rules --stdout > <output> #/etc/john/john.conf
+cewl <site> -m <min-chars> 
+hydra -v -l <user> -p <pass> -M <targets> <protocol> 
+hydra -v -L <user_list> -P <pass_list> <protocol>://<ip>:<port> 
+crunch <min> <max> -t ruhptura%^@, -o <output>
+```
+
+| %   | number       |
+| --- | ------------ |
+| ^   | special char |
+| @   | lowercase    |
+| ,   | uppercase    |
 
 # wget
 para baixar todo conteudo de uma página
