@@ -1296,6 +1296,76 @@ search for a string in a specific directory
 ```
 grep -ri "desec" /caminho/do/diretorio 2>/dev/null
 ```
+
+## regex
+
+- `$` indica o final da linha
+- `^` indica o inicio da linha
+
+Key regex patterns used in `grep`, `sed`, `awk`, Python, Perl, JavaScript, etc.
+
+### 1. Basic Metacharacters
+
+| Regex | Description | Example |
+|-------|-------------|---------|
+| `.`   | Matches **any character** (except newline) | `a.c` → `abc`, `aXc` |
+| `^`   | Matches the **start of a line** | `^abc` → `abc` at line start |
+| `$`   | Matches the **end of a line** | `xyz$` → `xyz` at line end |
+| `*`   | Matches **0 or more** repetitions of the previous character | `ab*c` → `ac`, `abc`, `abbc` |
+| `+`   | Matches **1 or more** repetitions of the previous character | `ab+c` → `abc`, `abbc` (not `ac`) |
+| `?`   | Matches **0 or 1** repetition of the previous character | `ab?c` → `ac`, `abc` |
+| `\`   | Escapes a metacharacter (treats it literally) | `\.` → Matches a literal dot (`.`) |
+### 2. Character Classes
+
+| Regex     | Description | Example |
+|-----------|-------------|---------|
+| `[abc]`   | Matches **a, b, or c** | `[aeiou]` → Any vowel |
+| `[^abc]`  | Matches **any character except a, b, c** | `[^0-9]` → Non-digit |
+| `[a-z]`   | Matches any lowercase letter | `[a-z]` → `a`, `b`, ..., `z` |
+| `[A-Z]`   | Matches any uppercase letter | `[A-Z]` → `A`, `B`, ..., `Z` |
+| `[0-9]`   | Matches digits | `[0-9]` → `0`, `1`, ..., `9` |
+| `\d`      | Equivalent to `[0-9]` (digit) | `\d\d` → `42`, `99` |
+| `\D`      | Non-digit (`[^0-9]`) | `\D+` → `abc`, `!@#` |
+| `\w`      | Word character (`[a-zA-Z0-9_]`) | `\w+` → `hello`, `x1` |
+| `\W`      | Non-word character (`[^\w]`) | `\W` → `!`, ` ` (space) |
+| `\s`      | Whitespace (space, tab, newline) | `\s+` → `   `, `\t` |
+| `\S`      | Non-whitespace | `\S+` → `abc`, `123` |
+### 3. Quantifiers
+
+| Regex   | Description | Example |
+|---------|-------------|---------|
+| `{n}`   | Exactly **n** repetitions | `a{3}` → `aaa` |
+| `{n,}`  | **n or more** repetitions | `a{2,}` → `aa`, `aaa`, ... |
+| `{n,m}` | Between **n and m** repetitions | `a{2,4}` → `aa`, `aaa`, `aaaa` |
+### 4. Groups and Capturing
+
+| Regex      | Description | Example |
+|------------|-------------|---------|
+| `(abc)`    | Groups characters | `(ab)+` → `ab`, `abab` |
+| `(a\|b)`   | Alternation (a or b) | `(cat\|dog)` → `cat` or `dog` |
+| `(?:abc)`  | Non-capturing group | `(?:ab)+` (group not stored) |
+### 5. Anchors and Boundaries
+
+| Regex      | Description | Example |
+|------------|-------------|---------|
+| `\b`       | Word boundary | `\bword\b` → `word` but not `password` |
+| `\B`       | Non-word boundary | `\Bword\B` → `password` but not `word` |
+| `(?=abc)`  | Positive lookahead (followed by `abc`) | `a(?=bc)` → `a` in `abc` |
+| `(?!abc)`  | Negative lookahead (not followed by `abc`) | `a(?!bc)` → `a` in `adef` |
+### 6. Practical Examples
+
+- **Find emails**: `[\w.-]+@[\w.-]+\.\w+`
+- **Validate date (dd/mm/yyyy)**: `^\d{2}/\d{2}/\d{4}$`
+- **Extract HTML tags**: `<[^>]+>`
+- **Find words ending with "ing"**: `\b\w+ing\b`
+
+### Notes
+
+- Default `grep` uses **basic regex (BRE)**. For extended regex (ERE), use `grep -E` or `egrep`.
+- In **Perl, Python, JavaScript**, syntax is richer (includes `\d`, `\s`, etc.).
+- **Greedy (`*`) vs. lazy (`*?`)** quantifiers in advanced regex.
+
+> Tip: Use tools like [Regex101](https://regex101.com/) to test your patterns!
 # ritual
 **versão python3:**
 ```
@@ -1574,8 +1644,72 @@ searchsploit ipfire --id -m <exploit_ID>
 ```
 
 
+
+# container
+## Comandos Básicos de Contêiner
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `docker ps` | Lista containers ativos | `docker ps` |
+| `docker ps -a` | Lista todos containers | `docker ps -a` |
+| `docker start <container>` | Inicia container | `docker start gitea` |
+| `docker stop <container>` | Para container | `docker stop gitea` |
+| `docker restart <container>` | Reinicia container | `docker restart gitea` |
+| `docker rm <container>` | Remove container | `docker rm gitea` |
+| `docker rm -f <container>` | Remove forçadamente | `docker rm -f gitea` |
+## Monitoramento e Logs
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `docker logs <container>` | Mostra logs | `docker logs gitea` |
+| `docker logs -f <container>` | Logs em tempo real | `docker logs -f gitea` |
+| `docker stats` | Monitora recursos | `docker stats` |
+| `docker top <container>` | Processos do container | `docker top gitea` |
+## Gerenciamento de Imagens
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `docker images` | Lista imagens | `docker images` |
+| `docker pull <imagem>` | Baixa imagem | `docker pull gitea/gitea` |
+| `docker rmi <imagem>` | Remove imagem | `docker rmi gitea/gitea` |
+## Execução Interativa
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `docker exec -it <container> bash` | Acessa terminal | `docker exec -it gitea bash` |
+| `docker run -it <imagem> sh` | Container temporário | `docker run -it alpine sh` |
+## Docker Compose
+| Comando | Descrição | Exemplo |
+|---------|-----------|---------|
+| `docker-compose up -d` | Inicia serviços | `docker-compose up -d` |
+| `docker-compose down` | Para e remove | `docker-compose down` |
+| `docker-compose logs` | Mostra logs | `docker-compose logs` |
+## Backup e Limpeza
+| Comando                                | Descrição      | Exemplo                          |
+| -------------------------------------- | -------------- | -------------------------------- |
+| `docker cp <container>:<path> <local>` | Copia arquivos | `docker cp gitea:/data ./backup` |
+| `docker system prune`                  | Limpeza geral  | `docker system prune`            |
+| `docker volume prune`                  | Limpa volumes  | `docker volume prune`            |
+# gitea
+API base URL
+```
+http://gitea.titanic.htb/api/v1
+```
+
+
+
 # web
 
+## vhost / subdomain / subdomínio
+O arquivo `/etc/hosts` pode conter informações acerca dos vhosts
+```
+127.0.0.1 localhost titanic.htb dev.titanic.htb
+127.0.1.1 titanic
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+```
 
 ## nmap
 
@@ -1980,6 +2114,19 @@ ffuf -u "http://FUZZ.mysite.htb/" -w /usr/share/seclists/Discovery/DNS/subdomain
 
 A forma 2 só funcionará se:
 - O servidor usa **DNS interno** ou configurações de `/etc/hosts` para mapear subdomínios para o IP `172.16.1.240`.
+
+### Match Case
+Existe a possibilidade do dev ter configurado um status code esquisito que o ffuf não pega por padrão.
+
+Por padrdão o ffuf pega os seguintes status code:
+```
+Matcher          : Response status: 200-299,301,302,307,401,403,405,500
+```
+
+Para dar match apenas no status code `400` e `401`
+```
+ffuf -u 'example.com' -w wordlist.txt -mc 400,401
+```
 
 ## metodos aceitos (get, put, options, head,post)
 - validar os métodos aceitos em cada um dos diretórios da aplicação
@@ -2876,4 +3023,9 @@ exit
 
 
 2. testar pivoting no rh.business
-3. 
+
+
+
+# estudar
+- container
+- jwt
