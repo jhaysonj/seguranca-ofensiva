@@ -3,12 +3,12 @@ import base64
 """
  
 Example
-python3 hash_pbkdf2$50000$50_decrypt.py
+python3 hashcat_pbkdf2$50000$50_decrypt.py
 
 Digite o número de iterações: 50000
 Digite o salt em hexadecimal: 8bf3e3452b78544f8bee9400d6936d34
 Digite o hash em hexadecimal: e531d398946137baea70ed6a680a54385ecff131309c0bd8f225f284406b7cbc8efc5dbef30bf1682619263444ea594cfb56
-String formatada: sha256:50:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfLyO/F2+8wvxaCYZJjRE6llM+1Y=
+String formatada: sha256:50000:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfLyO/F2+8wvxaCYZJjRE6llM+1Y=
 
 
 Bash example:

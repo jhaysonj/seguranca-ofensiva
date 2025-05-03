@@ -1385,8 +1385,47 @@ ls
 export TERM=xterm
 ```
 
-# identificar hashes
-hashid
+# hashes
+
+## pbkdf2$50000$50
+
+### hashcat
+formatado pbkdf2$50000$50 hashcat -m 10900
+```
+sha256:iterations:salt_base64:hash_base64
+```
+
+opção 1: python script
+hash_pbkdf2$50000$50_decrypt.py
+```
+python3 hash_pbkdf2$50000$50_decrypt.py
+
+
+Digite o número de iterações: 50000
+Digite o salt em hexadecimal: 8bf3e3452b78544f8bee9400d6936d34
+Digite o hash em hexadecimal: e531d398946137baea70ed6a680a54385ecff131309c0bd8f225f284406b7cbc8efc5dbef30bf1682619263444ea594cfb56
+
+String formatada: sha256:50000:i/PjRSt4VE+L7pQA1pNtNA==:5THTmJRhN7rqcO1qaApUOF7P8TEwnAvY8iXyhEBrfLyO/F2+8wvxaCYZJjRE6llM+1Y=
+```
+
+opção 2: bash script
+```
+sqlite3 file.db "select passwd,salt,name from user" | while read data; do digest=$(echo "$data" | cut -d'|' -f1 | xxd -r -p | base64); salt=$(echo "$data" | cut -d'|' -f2 | xxd -r -p | base64); name=$(echo $data | cut -d'|' -f 3); echo "${name}:sha256:50000:${salt}:${digest}"; done | tee gitea.hashes
+```
+
+#### decrypt 
+
+**Hashcat -m  10900**
+```
+sha256:iterations:salt_base64:hash_base64
+
+hashcat -m 10900 hash_developer_formata.txt /usr/share/wordlists/rockyou.txt
+```
+
+
+
+## identificar hashes
+- hashid
 # vim
 ```
 :w !sudo tee /path/to/file/arquivo
